@@ -2,81 +2,85 @@
 ## Architecture & Implementation Plan
 
 ## 1. Overview
-A lightweight, single-repository web application designed to generate, refine, and manage high-quality training datasets for math-focused LLMs. The platform facilitates three main categories of data generation: Model Distillation, Domain Adaptation, and Supervised Fine-Tuning (SFT).
+A web application designed to generate, refine, and manage high-quality training datasets for math-focused LLMs. The platform leverages the **Google Gen AI SDK** (acting as an "Agent Runner") and **Google Cloud Firestore** to create a scalable, agentic data generation pipeline that the user can heavily supervise and control.
 
 ## 2. System Architecture
-- **Backend:** FastAPI (Python)
-- **Frontend:** Vanilla HTML, CSS, and JavaScript (served directly from the FastAPI root `/` endpoint using `Jinja2Templates` and static file mounting). No heavy frameworks like React.
-- **Database:** SQLite (for easy local setup) or PostgreSQL, accessed via SQLAlchemy or SQLModel.
-- **LLM Integration:** Async API calls to an LLM provider (e.g., OpenAI API, Deepseek, or local vLLM instance) for chat, data structuring, and generation.
+- **Backend/Agent Runner:** Python (FastAPI or Flask) acting as the central "Agent Runner." It orchestrates the Google Gen AI SDK to manage multiple specialized agents (e.g., Distillation Agent, Review Agent, Math Expert Agent).
+- **Frontend (GUI):** Vanilla HTML, CSS, and JavaScript. The UI serves as a command center to monitor agent activities, intervene in generation, and review data.
+- **Database:** Google Cloud Firestore. Leveraging document-based NoSQL storage for flexible schema management, fast reads, and seamless scaling.
+- **LLM Integration:** Google Gen AI SDK natively powering the agents, with capabilities for multi-turn reasoning, tool use, and structured JSON output.
 
-## 3. Core Features & Three Data Pillars
+## 3. Operational Process & Agent Workflows
+The application operates on an "Agent Runner" paradigm, where the backend orchestrates autonomous generation that the user can supervise via the GUI.
 
-### Pillar A: Model Distillation Data
-- **Purpose:** Extracting reasoning traces and step-by-step solutions from a stronger "teacher" model (e.g., GPT-4o, Claude 3.5 Sonnet) to train a smaller model.
-- **Feature:** Bulk upload of problem statements. The app automatically queries the teacher model using high-quality Chain-of-Thought (CoT) prompts and saves the input-output pairs.
+### Workflow A: Supervised Fine-Tuning (SFT) Chat & Refinement
+1. **User Action:** Submits a raw math problem and an initial solution via the GUI.
+2. **Agent Runner:** Spawns a "Review Agent."
+3. **Interactive Process:** The Agent and User converse in the GUI. The Agent structures the problem into a highly detailed Chain-of-Thought (CoT) format.
+4. **Finalization:** User manually audits the output, makes inline edits, and clicks "Approve & Save." The data is committed to Firestore.
 
-### Pillar B: Domain Adaptation Data (Pre-training/Continued Pre-training)
-- **Purpose:** Teaching the model raw domain knowledge from textbooks, research papers, or PDFs.
-- **Feature:** PDF/Text upload functionality. The backend chunks the text and uses an LLM to generate synthetic Q&A pairs, theorem explanations, and concept summaries to adapt the model to complex Math Olympiad terminology.
+### Workflow B: Autonomous Batch Distillation
+1. **User Action:** Uploads a CSV/PDF of raw equations or problems.
+2. **Agent Runner:** Spawns a "Distillation Agent" fleet in the background. Each agent autonomously solves issues step-by-step.
+3. **Review Process:** The GUI displays a real-time dashboard of completed, pending, and failed tasks.
+4. **Finalization:** The user audits a random sample of the generated CoT data and clicks "Commit Batch" to save them to Firestore.
 
-### Pillar C: Supervised Fine-Tuning (SFT) & Pattern Data
-- **Purpose:** High-quality, human-aligned reasoning paths for specific mathematical patterns.
-- **Workflow (Interactive Chat):**
-  1. **Input:** User submits a root problem, their manual solution, their thinking process, and the underlying mathematical pattern.
-  2. **Chat Phase:** A chat interface opens. The LLM acts as a sounding board, discussing the solution, refining the reasoning steps, and formatting it into a pristine CoT structure.
-  3. **Confirmation:** The user reviews the finalized LLM-generated training sample in a split-screen or modal window.
-  4. **Persist:** A "Push to DB" GUI button commits the finalized pair to the database.
+### Workflow C: Problem Variabilization (Data Enrichment)
+1. **User Action:** Selects a high-quality "Root" problem in the GUI.
+2. **Agent Runner:** Instructs a "Variant Agent" to alter numbers and contexts while preserving logic, generating new problems.
+3. **Review Process:** The GUI presents the original alongside the generated variants in a side-by-side modal.
+4. **Finalization:** User toggles which variants are mathematically sound and pushes them to Firestore, maintaining a parent-child relationship.
 
-### Pillar D: Problem Variabilization (Data Enrichment)
-- **Purpose:** Multiplying the dataset size and robustness by altering numbers, contexts, or phrasing without changing the underlying mathematical logic.
-- **Tracking System:** 
-  - Every problem is tracked in a tree structure. 
-  - The original user-inputted problem is the `Root Problem`.
-  - The LLM can be prompted to generate `Variant 1`, `Variant 2`, etc.
-  - Variants maintain a foreign key bridging back to the `Root Problem` to ensure dataset stratification (so root and variants don't accidentally leak across train/test splits).
+## 4. GUI Layout & Control Center (VS Code Style)
 
-## 4. Database Schema (High-Level)
+The graphical interface is designed similarly to VS Code and the Antigravity platform. It is split into three main horizontal sections and relies on a Left-Side Navigation Tab system.
 
-**Table: `problems`**
-- `id` (PK)
-- `problem_text`
-- `problem_type` (Distillation, Domain, SFT)
-- `is_root` (Boolean)
-- `parent_id` (FK to `problems.id`, null if root)
-- `source_material` (e.g., PDF name, or user input)
+### Global Layout Structure
+- **Left Section (Navigation):** Used to switch between the three main views tabs (Dashboard, Console, Database).
+- **Middle Section (The Editor):** The main workspace where the generated JSON data appears. This is a fully editable area where you can view the data structure and manually fix any math errors.
+- **Right Section (Agent Chat):** A chat interface to converse directly with the AI agent. You can ask the AI to modify the JSON data in the middle section, and once satisfied, click a prominent "Push to Database" GUI button.
 
-**Table: `sft_sessions`** (To save chat states)
-- `session_id` (PK)
-- `problem_id` (FK)
-- `chat_history` (JSON)
-- `current_status` (Draft, Ready, Committed)
+### The Three Main Navigation Tabs
 
-**Table: `training_data`** (The final formatted output)
-- `id` (PK)
-- `problem_id` (FK)
-- `prompt` (The exact string going to the model)
-- `response` (The exact target string)
-- `format` (e.g., Alpaca, ChatML, OpenAI Messages)
-- `created_at` (Timestamp)
+#### Tab 1: Main Dashboard (Data Iteration Hub)
+- **Purpose:** This is where the core data generation and refinement happens.
+- **Active Panes:** Displays the Middle Section (JSON data Editor) and Right Section (Agent Chat).
+- **Workflow:** You instruct the AI in the chat to generate or fix a math problem. The AI outputs the formatted JSON in the middle editor. You make manual tweaks if needed, then click "Push to Database".
 
-## 5. Endpoints (FastAPI structure)
+#### Tab 2: Console & Model Control
+- **Purpose:** Configuration center for the Agent Runner.
+- **Features:** 
+  - Dropdowns to select different LLM models.
+  - Text areas to edit the core System Prompts.
+  - Tools to tweak the agent's behavior and environment variables without touching the codebase.
 
-### UI Routes
-- `GET /` -> Serves the main SPA (Single Page Application) HTML.
-- `GET /static/{filepath}` -> Serves CSS, JS, and assets.
+#### Tab 3: Database Visualization & Insights
+- **Purpose:** A high-level overview of everything you've created in Firestore.
+- **Features:**
+  - View total metrics: How many problems generated, how many documents total in the database.
+  - Apply filters to the database (e.g., sort by tags or SFT vs Distillation).
+  - Visualization of the overall dataset health before exporting it to a `.jsonl` file.
 
-### API Routes
-- `POST /api/chat/stream` -> Handles the SFT interactive chat (SSE for streaming).
-- `POST /api/generate-variant/{problem_id}` -> Triggers LLM to generate a variant.
-- `POST /api/distill/batch` -> Triggers batch distillation task in background.
-- `POST /api/upload/document` -> Handles PDF uploads for domain adaptation.
-- `POST /api/training-data/commit` -> The "Push to DB" button handler.
-- `GET /api/training-data/export` -> Exports the DB to a `.jsonl` file ready for HuggingFace/Unsloth.
+## 5. Database Schema (Firestore Collections)
 
-## 6. User Interface Layout (Vanilla JS Design)
-- **Sidebar:** Navigation (SFT Builder, Distillation Jobs, Document Parser, Data Explorer).
-- **Main View (SFT Builder):**
-  - **Left Pane:** Input forms (Problem, My Solution, My Thoughts, Pattern).
-  - **Middle Pane:** Chat window (WebSocket or SSE) to converse with the LLM about the problem.
-  - **Right Pane:** Live preview of the "Final Training Data Object" (JSON format). Updates dynamically. Includes the large "Push to Database" button and "Generate Variant" button.
+**Collection: `problems` (The Root Data)**
+- `document_id`: Auto-generated string
+- `problem_text`: String
+- `source`: String (User input, PDF name)
+- `tags`: Array of Strings
+- `is_root`: Boolean
+
+**Collection: `training_pairs` (The Final Generated Output)**
+- `document_id`: Auto-generated string
+- `problem_id`: Reference string to `problems`
+- `conversation`: Array of Objects (Simulating JSON structure for LLM training: `{"role": "user", "content": "..."}`)
+- `generation_method`: String (Human, Agent_Distillation, Agent_Variant)
+- `status`: String (Draft, Approved, Exported)
+- `parent_id`: Reference string (if it's a variant of another problem)
+
+**Collection: `agent_jobs` (State Management)**
+- `document_id`: Auto-generated string
+- `job_type`: String (Batch Distillation, PDF Parser)
+- `total_tasks`: Integer
+- `completed_tasks`: Integer
+- `status`: String (Running, Paused, Completed, Failed)
