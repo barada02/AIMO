@@ -36,6 +36,8 @@ except Exception as e:
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default_session"
+    mode: str = "distill"
+    document_context: str = ""
 
 class ChatResponse(BaseModel):
     reply: str
@@ -57,11 +59,16 @@ def serve_ui():
 async def chat_endpoint(req: ChatRequest):
     """
     Takes a message from the GUI, sends it to the modular ADK Agent Runner,
-    and returns the AI's response.
+    and returns the structured data response.
     """
     try:
-        # Programmatically trigger the ADK agent using our modular function
-        reply_text, agent_name = await run_chat_agent(req.message, req.session_id)
+        # Programmatically trigger the ADK agent using our modular structured function
+        reply_text, agent_name = await run_chat_agent(
+            user_message=req.message, 
+            session_id=req.session_id,
+            mode=req.mode,
+            document_context=req.document_context
+        )
 
         return ChatResponse(
             reply=reply_text,

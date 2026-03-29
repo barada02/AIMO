@@ -213,12 +213,17 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
             try {
+                // Pass the current mode and existing editor content to the Agent!
+                const documentContext = editor.value.trim();
+                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        message: `[MODE=${currentMode}] ${text}`, 
-                        session_id: "test-session" 
+                        message: text, 
+                        session_id: "test-session",
+                        mode: currentMode,
+                        document_context: documentContext
                     })
                 });
 
@@ -227,7 +232,22 @@
 
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'chat-bubble bubble-ai';
-                aiMsg.textContent = data.reply;
+                
+                // Phase 2: Autonomous Editing Logic
+                // Because of our strict System Prompt, data.reply should be pure JSON.
+                try {
+                    const parsedJson = JSON.parse(data.reply);
+                    // It is valid JSON! Render it perfectly indented into the Middle Pane.
+                    editor.value = JSON.stringify(parsedJson, null, 2);
+                    
+                    // The agent didn't "say" anything conversational, so we simulate a polite system ping
+                    aiMsg.innerHTML = '<i class="fas fa-check-circle" style="color:#14b8a6"></i> <b>Document Generated.</b><br>I have successfully synthesized the data and injected it into your Editor.';
+                } catch(err) {
+                    // Fallback: The agent hallucinated conversational text, so just show it in the chat
+                    console.warn("Could not parse as JSON. Raw output:", data.reply);
+                    aiMsg.textContent = data.reply;
+                }
+                
                 chatHistory.appendChild(aiMsg);
 
             } catch(e) {
