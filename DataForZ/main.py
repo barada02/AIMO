@@ -105,3 +105,14 @@ async def commit_endpoint(req: CommitRequest):
     except Exception as e:
         print(f"Database error during commit: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Run the server
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",  # Changed from 0.0.0.0 to localhost
+        port=8080,
+        reload=True,
+        log_level="info"
+    )
