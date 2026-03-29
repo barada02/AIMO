@@ -1,5 +1,10 @@
 import asyncio
 import sys
+import os
+from dotenv import load_dotenv
+# Automatically load environment variables from the .env file
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import firebase_admin
@@ -49,10 +54,13 @@ class ChatResponse(BaseModel):
     agent_name: str
 
 
+from fastapi.responses import FileResponse
+
 # --- API Endpoints ---
 @app.get("/")
-def health_check():
-    return {"status": "ok", "message": "FastAPI is running with Google ADK!"}
+def serve_ui():
+    """Serves the frontend testing GUI"""
+    return FileResponse("index.html")
 
 @app.post("/api/chat", response_model=ChatResponse)
 async def chat_endpoint(req: ChatRequest):
@@ -61,22 +69,30 @@ async def chat_endpoint(req: ChatRequest):
     and returns the AI's response.
     """
     try:
-        # Programmatically trigger the ADK agent using the Runner
-        response = await agent_runner.run_async(
-            input=req.message, 
-            session_id=req.session_id
+        # Programmatically trigger the ADK agent using run_debug
+        # run_debug is perfect here as it accepts plain strings easily
+        events = await agent_runner.run_debug(
+            user_messages=req.message, 
+            session_id=req.session_id,
+            user_id="ui_user"
         )
         
-        # Depending on ADK version, response might be a string or an object.
-        # We handle both just in case:
-        reply_text = response
-        if not isinstance(response, str):
-            if hasattr(response, "text"):
-                reply_text = response.text
-            elif hasattr(response, "message"):
-                reply_text = str(response.message)
-            else:
-                reply_text = str(response)
+        reply_text = ""
+        # ADK returns a list of Events. We extract the text from the model's response.
+        for event in events:
+            # Different ADK versions nest the text differently
+            if hasattr(event, "message") and event.message and getattr(event.message, "role", "") == "model":
+                content = getattr(event.message, "content", None)
+                if content and hasattr(content, "parts"):
+                    for part in content.parts:
+                        if hasattr(part, "text") and part.text:
+                            reply_text += part.text
+            elif hasattr(event, "text") and event.text:
+                reply_text += event.text
+                
+        if not reply_text and events:
+             # Fallback if the object schema is slightly different than expected
+             reply_text = str(events[-1])
 
         return ChatResponse(
             reply=reply_text,
