@@ -267,8 +267,71 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        function commitToDatabase() {
-            alert("Database connection module is pending! The JSON will be POSTed securely soon.");
+        async function commitToDatabase() {
+            const editor = document.getElementById('json-editor');
+            const dataText = editor.value.trim();
+            const btn = document.querySelector('.btn-primary');
+            const chatHistory = document.getElementById('chat-history');
+            
+            if (!dataText) {
+                alert("Editor is empty. Generate some data first!");
+                return;
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(dataText);
+            } catch (err) {
+                alert("Invalid JSON format. Please fix any syntax errors in the editor before pushing.");
+                return;
+            }
+
+            // Visual feedback
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pushing Data...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/commit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        collection_name: "training_data",
+                        document_data: parsedData 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || "Server Error");
+                }
+
+                const result = await response.json();
+                
+                // Show amazing success state!
+                btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.boxShadow = '';
+                    btn.disabled = false;
+                }, 2500);
+                
+                // Ping the Chat system!
+                const sysMsg = document.createElement('div');
+                sysMsg.className = 'chat-bubble bubble-ai';
+                sysMsg.innerHTML = `<i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>The current document was successfully committed to Firestore.<br><span style="font-size:0.7rem;color:#94a3b8">Doc ID: ${result.doc_id}</span>`;
+                chatHistory.appendChild(sysMsg);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+            } catch (err) {
+                alert("Database push failed: " + err.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

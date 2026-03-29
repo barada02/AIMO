@@ -8,7 +8,9 @@ load_dotenv()
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
+from typing import Dict, Any
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -43,16 +45,17 @@ class ChatResponse(BaseModel):
     reply: str
     agent_name: str
 
+class CommitRequest(BaseModel):
+    collection_name: str = "training_data"
+    document_data: Dict[str, Any]
 
 # --- API Endpoints ---
 @app.get("/")
 def serve_ui():
     """Serves the frontend testing GUI from the modular directory."""
-    # Build a cross-platform path to src/ui/index.html
     ui_template = os.path.join(os.path.dirname(__file__), "src", "ui", "index.html")
     if os.path.exists(ui_template):
         return FileResponse(ui_template)
-    # Backward compatibility fallback
     return FileResponse("index.html")
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -62,19 +65,43 @@ async def chat_endpoint(req: ChatRequest):
     and returns the structured data response.
     """
     try:
-        # Programmatically trigger the ADK agent using our modular structured function
         reply_text, agent_name = await run_chat_agent(
             user_message=req.message, 
             session_id=req.session_id,
             mode=req.mode,
             document_context=req.document_context
         )
-
         return ChatResponse(
             reply=reply_text,
             agent_name=agent_name
         )
-        
     except Exception as e:
         print(f"Error executing agent runner logic: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/commit")
+async def commit_endpoint(req: CommitRequest):
+    """
+    Takes a validated JSON payload from the UI editor and securely commits it to Firestore.
+    Runs in a threadpool to prevent blocking the async FastAPI event loop.
+    """
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not initialized. Check firebase-credentials.json")
+    
+    try:
+        def push_to_db():
+            # Inject a secure backend timestamp to track when the data was generated
+            req.document_data['timestamp'] = firestore.SERVER_TIMESTAMP
+            
+            # Add new document to the targeted collection
+            doc_ref = db.collection(req.collection_name).add(req.document_data)
+            return doc_ref[1].id
+            
+        # Execute the blocking Firestore SDK operation inside a thread pool
+        doc_id = await run_in_threadpool(push_to_db)
+        
+        return {"status": "success", "doc_id": doc_id}
+        
+    except Exception as e:
+        print(f"Database error during commit: {e}")
         raise HTTPException(status_code=500, detail=str(e))
