@@ -1,0 +1,68 @@
+# Python Virtual Environments & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+project_keys/
+*credentials*.json
+*key*.json
+*secret*.json
+
+# Firebase / Google Cloud
+firebase-debug.log
+firebase-debug.*.log
+.firebaserc
+firestore-debug.log
+ui-debug.log
+
+# VS Code / IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# MacOS
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# Project specific Local DBs or Data
+data/
+db/
+*.sqlite3

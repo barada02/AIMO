@@ -44,8 +44,9 @@ The graphical interface is designed similarly to VS Code and the Antigravity pla
 
 #### Tab 1: Main Dashboard (Data Iteration Hub)
 - **Purpose:** This is where the core data generation and refinement happens.
+- **Task Selector Buttons:** A set of GUI buttons (e.g., "Model Distillation", "Problem Solving", "SFT") that instantly switch the active System Prompts and strict JSON schemas to match the specific data generation task you are currently performing. This makes scaling easy when you want to add new task types later.
 - **Active Panes:** Displays the Middle Section (JSON data Editor) and Right Section (Agent Chat).
-- **Workflow:** You instruct the AI in the chat to generate or fix a math problem. The AI outputs the formatted JSON in the middle editor. You make manual tweaks if needed, then click "Push to Database".
+- **Workflow:** You select a task type, then instruct the AI in the chat to generate a math problem. The AI outputs the strictly formatted JSON in the middle editor. You make manual tweaks if needed, then click "Push to Database".
 
 #### Tab 2: Console & Model Control
 - **Purpose:** Configuration center for the Agent Runner.
@@ -84,3 +85,11 @@ The graphical interface is designed similarly to VS Code and the Antigravity pla
 - `total_tasks`: Integer
 - `completed_tasks`: Integer
 - `status`: String (Running, Paused, Completed, Failed)
+
+## 6. Model Consistency & Context Engine
+
+To prevent the AI from feeling "lost" or repetitive during long generation sessions, the system implements a persistent "Context Window" feature.
+
+- **How it Works:** A background process tracks your progress in real-time (e.g., "Generated 15 Problem Solving outputs today. Last topic discussed was Calculus. Current active task is Model Distillation").
+- **State Injection:** This meta-context is saved as a status document in Firestore. It is automatically retrieved and prepended to the AI's System Prompt at the start of every new chat interaction in the Right Panel.
+- **The Result:** The model behaves like a consistent human collaborator. It knows exactly what you have achieved today, what schema you are focusing on, and what the last conversation was, allowing it to adapt its tone and outputs without you having to re-explain the state of the project every single time.
