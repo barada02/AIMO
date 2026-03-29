@@ -5,43 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataForZ Operator</title>
     <link rel="stylesheet" href="/static/index.css">
+    <!-- FontAwesome for VS Code style icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="app">
         
+        <!-- Far Left: VS Code Activity Bar -->
+        <div id="activity-bar">
+            <div class="activity-icon active" title="Dashboard" onclick="switchNav('dashboard')"><i class="fas fa-chart-line"></i></div>
+            <div class="activity-icon" title="Console & Models" onclick="switchNav('console')"><i class="fas fa-terminal"></i></div>
+            <div class="activity-icon" title="Database Insights" onclick="switchNav('database')"><i class="fas fa-database"></i></div>
+            
+            <div style="flex:1;"></div>
+            <div class="activity-icon" title="Settings"><i class="fas fa-cog"></i></div>
+        </div>
+
         <!-- Left Pane: Navigation & Task Selection -->
-        <div class="pane" id="left-pane">
-            <div class="pane-header">Dashboard</div>
+        <div class="pane" id="left-pane" style="width: 260px;">
+            <div class="pane-header">
+                <span id="left-pane-title">Dashboard</span>
+                <i class="fas fa-bars" title="Squeeze/Hide Sidebar" onclick="toggleSidebar()"></i>
+            </div>
+            
             <div class="nav-section">
-                <h3 class="nav-title">Active Mode</h3>
+                <!-- Expandable Accordion Tab -->
+                <h3 class="nav-title" onclick="toggleAccordion('modes-content', this)">
+                    <i class="fas fa-chevron-down"></i> Active Mode
+                </h3>
                 
-                <button class="mode-btn active" id="btn-distill" onclick="selectMode('distill')">
-                    Knowledge Distillation
-                    <span class="desc">Agent synthesizes raw text into CoT JSON</span>
-                </button>
-                
-                <button class="mode-btn" id="btn-sft" onclick="selectMode('sft')">
-                    Supervised Fine-Tuning
-                    <span class="desc">You provide problem & solution => AI builds data</span>
-                </button>
+                <div id="modes-content" class="accordion-content">
+                    <button class="mode-btn active" id="btn-distill" onclick="selectMode('distill')">
+                        Knowledge Distillation
+                        <span class="desc">Agent synthesizes raw text into CoT JSON</span>
+                    </button>
+                    
+                    <button class="mode-btn" id="btn-sft" onclick="selectMode('sft')">
+                        Supervised Fine-Tuning
+                        <span class="desc">You provide problem & solution => AI builds data</span>
+                    </button>
+                </div>
             </div>
         </div>
+
+        <!-- Resizer Handle 1 -->
+        <div class="resizer" id="resizer-left"></div>
 
         <!-- Middle Pane: The Data Editor -->
         <div class="pane" id="middle-pane">
             <div class="pane-header">
                 <span id="editor-title">Document Content (JSON)</span>
-                <span style="font-size: 0.7rem; color: #4ade80;">● Auto-sync Active</span>
+                <span style="font-size: 0.7rem; color: #14b8a6;"><i class="fas fa-circle"></i> Auto-sync Active</span>
             </div>
             <textarea id="json-editor" placeholder="{\n  // The agent's generated JSON will perfectly render here...\n  // You can manually edit this safely before committing.\n}"></textarea>
             <div class="editor-toolbar">
-                <button class="btn-primary" onclick="commitToDatabase()">Push to Database 🚀</button>
+                <button class="btn-primary" onclick="commitToDatabase()"><i class="fas fa-rocket"></i> Push to Database</button>
             </div>
         </div>
 
+        <!-- Resizer Handle 2 -->
+        <div class="resizer" id="resizer-right"></div>
+
         <!-- Right Pane: The AI Chat / Context Loop -->
-        <div class="pane" id="right-pane">
-            <div class="pane-header">Agent Co-Pilot</div>
+        <div class="pane" id="right-pane" style="width: 360px;">
+            <div class="pane-header">
+                Agent Co-Pilot
+                <i class="fas fa-ellipsis-h" style="cursor:pointer;" title="Chat Options"></i>
+            </div>
             
             <div id="chat-history">
                 <div class="chat-bubble bubble-ai">
@@ -52,17 +82,94 @@
             <div class="chat-input-area">
                 <div class="chat-input-wrapper">
                     <input type="text" id="chat-input" placeholder="Instruct the agent..." onkeypress="handleEnter(event)">
-                    <button onclick="sendChatMessage()">Send</button>
+                    <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
 
     </div>
 
+    <!-- UI Logic -->
     <script>
+        // --- 1. Resizable Panes Logic ---
+        function initResizer(resizerId, leftElementId, rightElementId, isRightResizer) {
+            const resizer = document.getElementById(resizerId);
+            const leftEl = document.getElementById(leftElementId);
+            const rightEl = document.getElementById(rightElementId);
+            
+            let isResizing = false;
+
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                resizer.classList.add('resizing');
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                if (isRightResizer) {
+                    // Right pane resizes from right boundary. e.clientX is absolute mouse X.
+                    // Panel width = total app width - mouseX - padding/margins.
+                    const newWidth = document.getElementById('app').clientWidth - e.clientX;
+                    if (newWidth > 200 && newWidth < 800) {
+                        rightEl.style.width = `${newWidth}px`;
+                    }
+                } else {
+                    // Left pane resizes from left boundary (minus the 50px of the Activity Bar)
+                    const newWidth = e.clientX - 60; 
+                    if (newWidth > 150 && newWidth < 500) {
+                        leftEl.style.width = `${newWidth}px`;
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if(isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'default';
+                    resizer.classList.remove('resizing');
+                }
+            });
+        }
+
+        // Initialize both drag bars
+        initResizer('resizer-left', 'left-pane', 'middle-pane', false);
+        initResizer('resizer-right', 'middle-pane', 'right-pane', true);
+
+
+        // --- 2. Expandable / Squeezable Sidebars ---
+        function toggleSidebar() {
+            const lp = document.getElementById('left-pane');
+            const resizer = document.getElementById('resizer-left');
+            if (lp.style.display === 'none') {
+                lp.style.display = 'flex';
+                resizer.style.display = 'block';
+            } else {
+                lp.style.display = 'none';
+                resizer.style.display = 'none';
+            }
+        }
+
+        function toggleAccordion(contentId, titleEl) {
+            const content = document.getElementById(contentId);
+            content.classList.toggle('closed');
+            titleEl.classList.toggle('closed');
+        }
+
+        function switchNav(tabName) {
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('left-pane-title').innerText = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            
+            if (document.getElementById('left-pane').style.display === 'none') {
+                toggleSidebar();
+            }
+        }
+
+        // --- 3. Chat and Mode Logic ---
         let currentMode = "distill";
 
-        // Mode Selector Logic
         function selectMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -71,28 +178,24 @@
             const chatHistory = document.getElementById('chat-history');
             const modeName = mode === 'distill' ? "Knowledge Distillation" : "SFT (Supervised Fine-Tuning)";
             
-            // Add system notification to chat
             const sysMsg = document.createElement('div');
             sysMsg.className = 'chat-bubble bubble-ai';
-            sysMsg.innerHTML = `<span style="color:#ec4899;">[System]</span> Switched to <b>${modeName}</b> mode.`;
+            sysMsg.style.color = '#a1a1aa';
+            sysMsg.innerHTML = `<i class="fas fa-info-circle"></i> Switched to <b>${modeName}</b> mode.`;
             chatHistory.appendChild(sysMsg);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendChatMessage();
-        }
+        function handleEnter(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         async function sendChatMessage() {
             const inputEl = document.getElementById('chat-input');
             const chatHistory = document.getElementById('chat-history');
             const editor = document.getElementById('json-editor');
-            const documentContext = editor.value; // Grabbing whatever is in the middle pane
             
             const text = inputEl.value.trim();
             if(!text) return;
 
-            // Render User Message
             const userMsg = document.createElement('div');
             userMsg.className = 'chat-bubble bubble-user';
             userMsg.textContent = text;
@@ -101,7 +204,6 @@
             inputEl.value = '';
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
-            // Render loading State
             const loadingId = 'loading-' + Date.now();
             const loadingMsg = document.createElement('div');
             loadingMsg.id = loadingId;
@@ -111,13 +213,11 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
             try {
-                // Here we will eventually send BOTH the active Mode, the message, and the existing JSON document
-                // so the backend can inject it into the System Prompt. 
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
-                        message: `[MODE=${currentMode}] ${text}`, // Temporary mock data structure
+                        message: `[MODE=${currentMode}] ${text}`, 
                         session_id: "test-session" 
                     })
                 });
@@ -127,9 +227,6 @@
 
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'chat-bubble bubble-ai';
-                
-                // For Phase 1, we just dump the response in the chat. 
-                // Later, if it detects JSON, we'll route it to the Editor instead.
                 aiMsg.textContent = data.reply;
                 chatHistory.appendChild(aiMsg);
 
@@ -141,12 +238,11 @@
                 errMsg.textContent = "Error: " + e.message;
                 chatHistory.appendChild(errMsg);
             }
-
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
         function commitToDatabase() {
-            alert("Database connection phase is next! The JSON in the middle pane will be POSTed securely.");
+            alert("Database connection module is pending! The JSON will be POSTed securely soon.");
         }
     </script>
 </body>
