@@ -18,7 +18,11 @@ from firebase_admin import firestore
 # Import our modular agent runner logic
 from src.agent_runner.runner import run_chat_agent
 
-app = FastAPI(title="DataForZ Agent API", description="API to run ADK Agents and connect to Firestore.")
+app = FastAPI(
+    title="DataForZ Agent API", 
+    description="API to run ADK Agents and connect to Firestore."
+    )
+
 # Mount the UI folder to serve CSS and JS
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "src", "ui")), name="static")
 
