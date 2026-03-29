@@ -39,7 +39,7 @@ try:
              # Auto-detect Google Cloud Run Application Default Credentials (ADC)
              firebase_admin.initialize_app()
              print("✅ Firebase initialized securely using Cloud Run Default Credentials.")
-    db = firestore.client()
+    db = firestore.client(database="dataforz-1")
 except Exception as e:
     print(f"⚠️ Warning: Firebase initialization failed. Start without DB? Error: {e}")
     db = None
