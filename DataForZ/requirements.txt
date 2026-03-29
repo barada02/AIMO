@@ -1,2 +1,2 @@
-googel-adk
 firebase-admin
+google-adk
