@@ -27,6 +27,7 @@ Extract the core math problem, detailed reasoning steps, and the final solution 
 
 CRITICAL INSTRUCTION: You must output ONLY valid, parsable JSON matching this exact structure:
 {
+  "agent_message": "String. A conversational response or opinion to show the user in chat.",
   "problem": "String. The extracted math problem.",
   "reasoning_steps": ["String. Step 1", "String. Step 2", "..."],
   "solution": "String. The final definitive answer.",
@@ -42,6 +43,7 @@ The user provides a math problem alongside their unformatted thoughts and a solu
 
 CRITICAL INSTRUCTION: You must output ONLY valid, parsable JSON matching this exact structure:
 {
+  "agent_message": "String. A conversational response or opinion to show the user in chat.",
   "problem": "String. The formalized math problem.",
   "reasoning_steps": ["String. Formal Step 1", "String. Formal Step 2", "..."],
   "solution": "String. The verified, formal final answer.",

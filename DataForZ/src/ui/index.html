@@ -237,11 +237,17 @@
                 // Because of our strict System Prompt, data.reply should be pure JSON.
                 try {
                     const parsedJson = JSON.parse(data.reply);
+                    
+                    // Extract the agent's conversational message
+                    const chatMessage = parsedJson.agent_message || "I have successfully synthesized the data.";
+                    // Remove it from the object so it doesn't get saved to the Database!
+                    delete parsedJson.agent_message;
+                    
                     // It is valid JSON! Render it perfectly indented into the Middle Pane.
                     editor.value = JSON.stringify(parsedJson, null, 2);
                     
-                    // The agent didn't "say" anything conversational, so we simulate a polite system ping
-                    aiMsg.innerHTML = '<i class="fas fa-check-circle" style="color:#14b8a6"></i> <b>Document Generated.</b><br>I have successfully synthesized the data and injected it into your Editor.';
+                    // Show the agent's opinion in the chat!
+                    aiMsg.innerHTML = `<i class="fas fa-check-circle" style="color:#14b8a6"></i> <b>Document Generated.</b><br><br>${chatMessage}`;
                 } catch(err) {
                     // Fallback: The agent hallucinated conversational text, so just show it in the chat
                     console.warn("Could not parse as JSON. Raw output:", data.reply);
