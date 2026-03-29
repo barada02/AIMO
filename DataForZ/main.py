@@ -1,6 +1,7 @@
 import sys
 import os
 import uvicorn
+import json
 from dotenv import load_dotenv
 
 # Automatically load environment variables from the .env file
@@ -33,8 +34,14 @@ try:
         # Check if local dev credential file exists
         if os.path.exists("firebase-credentials.json"):
              cred = credentials.Certificate("firebase-credentials.json")
-             firebase_admin.initialize_app(cred)
+             firebase_admin.initialize_app(cred, options={'projectId': PROJECT_ID})
              print("✅ Firebase initialized with local dev credentials file.")
+        elif os.environ.get("FIREBASE_CREDENTIALS"):
+             # Parse the JSON string directly from a Cloud Run Secret Environment Variable
+             cred_dict = json.loads(os.environ.get("FIREBASE_CREDENTIALS"))
+             cred = credentials.Certificate(cred_dict)
+             firebase_admin.initialize_app(cred, options={'projectId': PROJECT_ID})
+             print("✅ Firebase initialized dynamically via Environment Variable Secret.")
         else:
              # Auto-detect Google Cloud Run Application Default Credentials (ADC)
              firebase_admin.initialize_app(options={
