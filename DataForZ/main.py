@@ -1,5 +1,6 @@
 import sys
 import os
+import uvicorn
 from dotenv import load_dotenv
 
 # Automatically load environment variables from the .env file
@@ -29,10 +30,16 @@ app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__
 # --- 1. Initialize Firebase DB ---
 try:
     if not firebase_admin._apps:
-        cred = credentials.Certificate("firebase-credentials.json")
-        firebase_admin.initialize_app(cred)
+        # Check if local dev credential file exists
+        if os.path.exists("firebase-credentials.json"):
+             cred = credentials.Certificate("firebase-credentials.json")
+             firebase_admin.initialize_app(cred)
+             print("✅ Firebase initialized with local dev credentials file.")
+        else:
+             # Auto-detect Google Cloud Run Application Default Credentials (ADC)
+             firebase_admin.initialize_app()
+             print("✅ Firebase initialized securely using Cloud Run Default Credentials.")
     db = firestore.client()
-    print("✅ Firebase initialized successfully in FastAPI.")
 except Exception as e:
     print(f"⚠️ Warning: Firebase initialization failed. Start without DB? Error: {e}")
     db = None
