@@ -1,5 +1,6 @@
 import sys
 import os
+import uvicorn
 from dotenv import load_dotenv
 
 # Automatically load environment variables from the .env file
@@ -18,17 +19,27 @@ from firebase_admin import firestore
 # Import our modular agent runner logic
 from src.agent_runner.runner import run_chat_agent
 
-app = FastAPI(title="DataForZ Agent API", description="API to run ADK Agents and connect to Firestore.")
+app = FastAPI(
+    title="DataForZ Agent API", 
+    description="API to run ADK Agents and connect to Firestore."
+    )
+
 # Mount the UI folder to serve CSS and JS
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "src", "ui")), name="static")
 
 # --- 1. Initialize Firebase DB ---
 try:
     if not firebase_admin._apps:
-        cred = credentials.Certificate("firebase-credentials.json")
-        firebase_admin.initialize_app(cred)
+        # Check if local dev credential file exists
+        if os.path.exists("firebase-credentials.json"):
+             cred = credentials.Certificate("firebase-credentials.json")
+             firebase_admin.initialize_app(cred)
+             print("✅ Firebase initialized with local dev credentials file.")
+        else:
+             # Auto-detect Google Cloud Run Application Default Credentials (ADC)
+             firebase_admin.initialize_app()
+             print("✅ Firebase initialized securely using Cloud Run Default Credentials.")
     db = firestore.client()
-    print("✅ Firebase initialized successfully in FastAPI.")
 except Exception as e:
     print(f"⚠️ Warning: Firebase initialization failed. Start without DB? Error: {e}")
     db = None
@@ -105,3 +116,14 @@ async def commit_endpoint(req: CommitRequest):
     except Exception as e:
         print(f"Database error during commit: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Run the server
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",  # Changed from 0.0.0.0 to localhost
+        port=8080,
+        reload=True,
+        log_level="info"
+    )
