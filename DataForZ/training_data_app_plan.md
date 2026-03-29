@@ -2,13 +2,13 @@
 ## Architecture & Implementation Plan
 
 ## 1. Overview
-A web application designed to generate, refine, and manage high-quality training datasets for math-focused LLMs. The platform leverages the **Google Gen AI SDK** (acting as an "Agent Runner") and **Google Cloud Firestore** to create a scalable, agentic data generation pipeline that the user can heavily supervise and control.
+A web application designed to generate, refine, and manage high-quality training datasets for math-focused LLMs. The platform leverages the **`google-adk` (Agent Development Kit)** (acting as an "Agent Runner") and **Google Cloud Firestore** to create a scalable, agentic data generation pipeline that the user can heavily supervise and control.
 
 ## 2. System Architecture
-- **Backend/Agent Runner:** Python (FastAPI or Flask) acting as the central "Agent Runner." It orchestrates the Google Gen AI SDK to manage multiple specialized agents (e.g., Distillation Agent, Review Agent, Math Expert Agent).
+- **Backend/Agent Runner:** Python (FastAPI or Flask) acting as the central "Agent Runner." It orchestrates the `google-adk` to manage multiple specialized agents (e.g., Distillation Agent, Review Agent, Math Expert Agent).
 - **Frontend (GUI):** Vanilla HTML, CSS, and JavaScript. The UI serves as a command center to monitor agent activities, intervene in generation, and review data.
 - **Database:** Google Cloud Firestore. Leveraging document-based NoSQL storage for flexible schema management, fast reads, and seamless scaling.
-- **LLM Integration:** Google Gen AI SDK natively powering the agents, with capabilities for multi-turn reasoning, tool use, and structured JSON output.
+- **LLM Integration:** `google-adk` (Agent Development Kit) natively powering the agents, with capabilities for multi-turn reasoning, tool use, and structured JSON output.
 
 ## 3. Operational Process & Agent Workflows
 The application operates on an "Agent Runner" paradigm, where the backend orchestrates autonomous generation that the user can supervise via the GUI.
