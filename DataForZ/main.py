@@ -81,18 +81,29 @@ async def chat_endpoint(req: ChatRequest):
         # ADK returns a list of Events. We extract the text from the model's response.
         for event in events:
             # Different ADK versions nest the text differently
+            
+            # 1. Strategy A: Event wraps a "message"
             if hasattr(event, "message") and event.message and getattr(event.message, "role", "") == "model":
                 content = getattr(event.message, "content", None)
                 if content and hasattr(content, "parts"):
                     for part in content.parts:
                         if hasattr(part, "text") and part.text:
                             reply_text += part.text
+                            
+            # 2. Strategy B: Event itself is the message (matching the dump you saw)
+            elif hasattr(event, "content") and event.content:
+                if hasattr(event.content, "parts"):
+                    for part in event.content.parts:
+                        if hasattr(part, "text") and part.text:
+                            reply_text += str(part.text)
+                            
+            # 3. Strategy C: Event just has flat text
             elif hasattr(event, "text") and event.text:
-                reply_text += event.text
+                reply_text += str(event.text)
                 
         if not reply_text and events:
-             # Fallback if the object schema is slightly different than expected
-             reply_text = str(events[-1])
+             # Fallback if the object schema is totally unexpected
+             reply_text = "Parsing error: Could not extract text. Raw dump: " + str(events[-1])
 
         return ChatResponse(
             reply=reply_text,
