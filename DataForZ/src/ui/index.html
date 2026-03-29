@@ -3,80 +3,335 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADK Agent Test UI</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 40px auto; background-color: #f4f4f9; color: #333; }
-        h2 { text-align: center; color: #444; }
-        #chat-box { background: white; border: 1px solid #ddd; border-radius: 8px; height: 400px; padding: 15px; overflow-y: auto; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .msg { margin-bottom: 15px; line-height: 1.4; }
-        .user-msg { text-align: right; color: #0056b3; }
-        .agent-msg { text-align: left; color: #28a745; background-color: #eef9f0; padding: 10px; border-radius: 5px; }
-        .agent-name { font-weight: bold; font-size: 0.8em; color: #555; margin-bottom: 3px; }
-        .input-group { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 16px; }
-        button { padding: 10px 20px; border: none; background-color: #007bff; color: white; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background-color: #0056b3; }
-    </style>
+    <title>DataForZ Operator</title>
+    <link rel="stylesheet" href="/static/index.css">
+    <!-- FontAwesome for VS Code style icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+    <div id="app">
+        
+        <!-- Far Left: VS Code Activity Bar -->
+        <div id="activity-bar">
+            <div class="activity-icon active" title="Dashboard" onclick="switchNav('dashboard')"><i class="fas fa-chart-line"></i></div>
+            <div class="activity-icon" title="Console & Models" onclick="switchNav('console')"><i class="fas fa-terminal"></i></div>
+            <div class="activity-icon" title="Database Insights" onclick="switchNav('database')"><i class="fas fa-database"></i></div>
+            
+            <div style="flex:1;"></div>
+            <div class="activity-icon" title="Settings"><i class="fas fa-cog"></i></div>
+        </div>
 
-    <h2>Agent API Tester</h2>
-    <div id="chat-box">
-        <div class="msg" style="color: #888; text-align: center; font-style: italic;">Chat session started. Say hello to your agent!</div>
-    </div>
-    
-    <div class="input-group">
-        <input type="text" id="userInput" placeholder="Ask your ADK agent..." onkeypress="handleEnter(event)">
-        <button onclick="sendMessage()">Send</button>
+        <!-- Left Pane: Navigation & Task Selection -->
+        <div class="pane" id="left-pane" style="width: 260px;">
+            <div class="pane-header">
+                <span id="left-pane-title">Dashboard</span>
+                <i class="fas fa-bars" title="Squeeze/Hide Sidebar" onclick="toggleSidebar()"></i>
+            </div>
+            
+            <div class="nav-section">
+                <!-- Expandable Accordion Tab -->
+                <h3 class="nav-title" onclick="toggleAccordion('modes-content', this)">
+                    <i class="fas fa-chevron-down"></i> Active Mode
+                </h3>
+                
+                <div id="modes-content" class="accordion-content">
+                    <button class="mode-btn active" id="btn-distill" onclick="selectMode('distill')">
+                        Knowledge Distillation
+                        <span class="desc">Agent synthesizes raw text into CoT JSON</span>
+                    </button>
+                    
+                    <button class="mode-btn" id="btn-sft" onclick="selectMode('sft')">
+                        Supervised Fine-Tuning
+                        <span class="desc">You provide problem & solution => AI builds data</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resizer Handle 1 -->
+        <div class="resizer" id="resizer-left"></div>
+
+        <!-- Middle Pane: The Data Editor -->
+        <div class="pane" id="middle-pane">
+            <div class="pane-header">
+                <span id="editor-title">Document Content (JSON)</span>
+                <span style="font-size: 0.7rem; color: #14b8a6;"><i class="fas fa-circle"></i> Auto-sync Active</span>
+            </div>
+            <textarea id="json-editor" placeholder="{\n  // The agent's generated JSON will perfectly render here...\n  // You can manually edit this safely before committing.\n}"></textarea>
+            <div class="editor-toolbar">
+                <button class="btn-primary" onclick="commitToDatabase()"><i class="fas fa-rocket"></i> Push to Database</button>
+            </div>
+        </div>
+
+        <!-- Resizer Handle 2 -->
+        <div class="resizer" id="resizer-right"></div>
+
+        <!-- Right Pane: The AI Chat / Context Loop -->
+        <div class="pane" id="right-pane" style="width: 360px;">
+            <div class="pane-header">
+                Agent Co-Pilot
+                <i class="fas fa-ellipsis-h" style="cursor:pointer;" title="Chat Options"></i>
+            </div>
+            
+            <div id="chat-history">
+                <div class="chat-bubble bubble-ai">
+                    System loaded. Currently operating in <b>Knowledge Distillation</b> mode. What raw text should we process?
+                </div>
+            </div>
+
+            <div class="chat-input-area">
+                <div class="chat-input-wrapper">
+                    <input type="text" id="chat-input" placeholder="Instruct the agent..." onkeypress="handleEnter(event)">
+                    <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
+    <!-- UI Logic -->
     <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('userInput');
+        // --- 1. Resizable Panes Logic ---
+        function initResizer(resizerId, leftElementId, rightElementId, isRightResizer) {
+            const resizer = document.getElementById(resizerId);
+            const leftEl = document.getElementById(leftElementId);
+            const rightEl = document.getElementById(rightElementId);
+            
+            let isResizing = false;
 
-        function handleEnter(e) {
-            if (e.key === 'Enter') sendMessage();
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                document.body.style.cursor = 'col-resize';
+                resizer.classList.add('resizing');
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+                
+                if (isRightResizer) {
+                    // Right pane resizes from right boundary. e.clientX is absolute mouse X.
+                    // Panel width = total app width - mouseX - padding/margins.
+                    const newWidth = document.getElementById('app').clientWidth - e.clientX;
+                    if (newWidth > 200 && newWidth < 800) {
+                        rightEl.style.width = `${newWidth}px`;
+                    }
+                } else {
+                    // Left pane resizes from left boundary (minus the 50px of the Activity Bar)
+                    const newWidth = e.clientX - 60; 
+                    if (newWidth > 150 && newWidth < 500) {
+                        leftEl.style.width = `${newWidth}px`;
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if(isResizing) {
+                    isResizing = false;
+                    document.body.style.cursor = 'default';
+                    resizer.classList.remove('resizing');
+                }
+            });
         }
 
-        async function sendMessage() {
-            const text = userInput.value.trim();
-            if (!text) return;
+        // Initialize both drag bars
+        initResizer('resizer-left', 'left-pane', 'middle-pane', false);
+        initResizer('resizer-right', 'middle-pane', 'right-pane', true);
 
-            // 1. Show User Message
-            chatBox.innerHTML += `<div class="msg user-msg"><b>You:</b> ${text}</div>`;
-            userInput.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
 
-            // 2. Add Loading Indicator
+        // --- 2. Expandable / Squeezable Sidebars ---
+        function toggleSidebar() {
+            const lp = document.getElementById('left-pane');
+            const resizer = document.getElementById('resizer-left');
+            if (lp.style.display === 'none') {
+                lp.style.display = 'flex';
+                resizer.style.display = 'block';
+            } else {
+                lp.style.display = 'none';
+                resizer.style.display = 'none';
+            }
+        }
+
+        function toggleAccordion(contentId, titleEl) {
+            const content = document.getElementById(contentId);
+            content.classList.toggle('closed');
+            titleEl.classList.toggle('closed');
+        }
+
+        function switchNav(tabName) {
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            document.getElementById('left-pane-title').innerText = tabName.charAt(0).toUpperCase() + tabName.slice(1);
+            
+            if (document.getElementById('left-pane').style.display === 'none') {
+                toggleSidebar();
+            }
+        }
+
+        // --- 3. Chat and Mode Logic ---
+        let currentMode = "distill";
+
+        function selectMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${mode}`).classList.add('active');
+            
+            const chatHistory = document.getElementById('chat-history');
+            const modeName = mode === 'distill' ? "Knowledge Distillation" : "SFT (Supervised Fine-Tuning)";
+            
+            const sysMsg = document.createElement('div');
+            sysMsg.className = 'chat-bubble bubble-ai';
+            sysMsg.style.color = '#a1a1aa';
+            sysMsg.innerHTML = `<i class="fas fa-info-circle"></i> Switched to <b>${modeName}</b> mode.`;
+            chatHistory.appendChild(sysMsg);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function handleEnter(e) { if (e.key === 'Enter') sendChatMessage(); }
+
+        async function sendChatMessage() {
+            const inputEl = document.getElementById('chat-input');
+            const chatHistory = document.getElementById('chat-history');
+            const editor = document.getElementById('json-editor');
+            
+            const text = inputEl.value.trim();
+            if(!text) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'chat-bubble bubble-user';
+            userMsg.textContent = text;
+            chatHistory.appendChild(userMsg);
+            
+            inputEl.value = '';
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+
             const loadingId = 'loading-' + Date.now();
-            chatBox.innerHTML += `<div id="${loadingId}" class="msg agent-msg" style="color: gray;"><i>Agent is thinking...</i></div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+            const loadingMsg = document.createElement('div');
+            loadingMsg.id = loadingId;
+            loadingMsg.className = 'chat-bubble bubble-ai';
+            loadingMsg.innerHTML = '<i>Processing request...</i>';
+            chatHistory.appendChild(loadingMsg);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
 
             try {
-                // 3. Ping the FastAPI Endpoint
+                // Pass the current mode and existing editor content to the Agent!
+                const documentContext = editor.value.trim();
+                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text, session_id: "test-session" })
+                    body: JSON.stringify({ 
+                        message: text, 
+                        session_id: "test-session",
+                        mode: currentMode,
+                        document_context: documentContext
+                    })
                 });
 
                 const data = await response.json();
-                
-                // 4. Remove Loading Indicator and Show Response
                 document.getElementById(loadingId).remove();
+
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'chat-bubble bubble-ai';
                 
-                if (data.reply) {
-                    chatBox.innerHTML += `<div class="msg agent-msg"><div class="agent-name">${data.agent_name}</div>${data.reply}</div>`;
-                } else {
-                    chatBox.innerHTML += `<div class="msg agent-msg" style="color: red;">Error processing reply.</div>`;
+                // Phase 2: Autonomous Editing Logic
+                // Because of our strict System Prompt, data.reply should be pure JSON.
+                try {
+                    const parsedJson = JSON.parse(data.reply);
+                    
+                    // Extract the agent's conversational message
+                    const chatMessage = parsedJson.agent_message || "I have successfully synthesized the data.";
+                    // Remove it from the object so it doesn't get saved to the Database!
+                    delete parsedJson.agent_message;
+                    
+                    // It is valid JSON! Render it perfectly indented into the Middle Pane.
+                    editor.value = JSON.stringify(parsedJson, null, 2);
+                    
+                    // Show the agent's opinion in the chat!
+                    aiMsg.innerHTML = `<i class="fas fa-check-circle" style="color:#14b8a6"></i> <b>Document Generated.</b><br><br>${chatMessage}`;
+                } catch(err) {
+                    // Fallback: The agent hallucinated conversational text, so just show it in the chat
+                    console.warn("Could not parse as JSON. Raw output:", data.reply);
+                    aiMsg.textContent = data.reply;
+                }
+                
+                chatHistory.appendChild(aiMsg);
+
+            } catch(e) {
+                document.getElementById(loadingId).remove();
+                const errMsg = document.createElement('div');
+                errMsg.className = 'chat-bubble bubble-ai';
+                errMsg.style.color = '#f87171';
+                errMsg.textContent = "Error: " + e.message;
+                chatHistory.appendChild(errMsg);
+            }
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        async function commitToDatabase() {
+            const editor = document.getElementById('json-editor');
+            const dataText = editor.value.trim();
+            const btn = document.querySelector('.btn-primary');
+            const chatHistory = document.getElementById('chat-history');
+            
+            if (!dataText) {
+                alert("Editor is empty. Generate some data first!");
+                return;
+            }
+
+            let parsedData;
+            try {
+                parsedData = JSON.parse(dataText);
+            } catch (err) {
+                alert("Invalid JSON format. Please fix any syntax errors in the editor before pushing.");
+                return;
+            }
+
+            // Visual feedback
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pushing Data...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/commit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        collection_name: "training_data",
+                        document_data: parsedData 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || "Server Error");
                 }
 
+                const result = await response.json();
+                
+                // Show amazing success state!
+                btn.innerHTML = '<i class="fas fa-check"></i> Success!';
+                btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                btn.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '';
+                    btn.style.boxShadow = '';
+                    btn.disabled = false;
+                }, 2500);
+                
+                // Ping the Chat system!
+                const sysMsg = document.createElement('div');
+                sysMsg.className = 'chat-bubble bubble-ai';
+                sysMsg.innerHTML = `<i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>The current document was successfully committed to Firestore.<br><span style="font-size:0.7rem;color:#94a3b8">Doc ID: ${result.doc_id}</span>`;
+                chatHistory.appendChild(sysMsg);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
             } catch (err) {
-                document.getElementById(loadingId).remove();
-                chatBox.innerHTML += `<div class="msg agent-msg" style="color: red;">Connection Failed: ${err.message}. Is FastAPI running?</div>`;
+                alert("Database push failed: " + err.message);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
             }
-            
-            chatBox.scrollTop = chatBox.scrollHeight;
         }
     </script>
 </body>
