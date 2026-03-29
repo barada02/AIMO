@@ -26,7 +26,7 @@ app = FastAPI(
 
 # Mount the UI folder to serve CSS and JS
 app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "src", "ui")), name="static")
-
+PROJECT_ID = "geminilive-488617"
 # --- 1. Initialize Firebase DB ---
 try:
     if not firebase_admin._apps:
@@ -37,7 +37,9 @@ try:
              print("✅ Firebase initialized with local dev credentials file.")
         else:
              # Auto-detect Google Cloud Run Application Default Credentials (ADC)
-             firebase_admin.initialize_app()
+             firebase_admin.initialize_app(options={
+                 'projectId': PROJECT_ID
+             })
              print("✅ Firebase initialized securely using Cloud Run Default Credentials.")
     db = firestore.client(database="dataforz-1")
 except Exception as e:
