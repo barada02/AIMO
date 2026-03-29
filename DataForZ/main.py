@@ -7,6 +7,7 @@ load_dotenv()
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import firebase_admin
 from firebase_admin import credentials
@@ -16,6 +17,8 @@ from firebase_admin import firestore
 from src.agent_runner.runner import run_chat_agent
 
 app = FastAPI(title="DataForZ Agent API", description="API to run ADK Agents and connect to Firestore.")
+# Mount the UI folder to serve CSS and JS
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "src", "ui")), name="static")
 
 # --- 1. Initialize Firebase DB ---
 try:
