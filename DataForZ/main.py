@@ -114,6 +114,36 @@ async def commit_endpoint(req: CommitRequest):
         print(f"Database error during commit: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/database/data")
+async def get_database_data():
+    """
+    Fetches the latest training data from Firestore directly for the Database Insights tab.
+    """
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected.")
+    try:
+        def fetch_db():
+            # Get latest 25 documents sorted by generation time
+            docs = db.collection("training_data").order_by(
+                "timestamp", direction=firestore.Query.DESCENDING
+            ).limit(25).stream()
+            
+            results = []
+            for doc in docs:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                # Stringify timestamp so it can pass through standard JSON serialization to UI
+                if 'timestamp' in data and data['timestamp']:
+                    data['timestamp'] = str(data['timestamp'])
+                results.append(data)
+            return results
+        
+        results = await run_in_threadpool(fetch_db)
+        return {"status": "success", "count": len(results), "data": results}
+    except Exception as e:
+        print(f"Database error during fetch: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # Run the server
 if __name__ == "__main__":

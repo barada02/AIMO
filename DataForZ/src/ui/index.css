@@ -308,3 +308,19 @@ h3.nav-title.closed i { transform: rotate(-90deg); }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+/* --- Multiple Views Layout --- */
+.app-view { transition: opacity 0.3s; }
+
+/* Console Sub-pane */
+.terminal-win { 
+    background: #000; color: #fff; font-family: 'Fira Code', monospace; 
+    padding: 1.5rem; flex: 1; overflow-y: auto; font-size: 0.85rem; 
+}
+.terminal-win p { margin-bottom: 0.5rem; }
+
+/* DataGrid for Firebase Tables */
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border-color); }
+th { background: rgba(0,0,0,0.3); color: var(--accent-primary); font-weight: 600; text-transform: uppercase; font-size: 0.70rem; letter-spacing: 0.5px; }
+tr:hover { background: rgba(255,255,255,0.02); }

@@ -5,88 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataForZ Operator</title>
     <link rel="stylesheet" href="/static/index.css">
-    <!-- FontAwesome for VS Code style icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div id="app">
-        
         <!-- Far Left: VS Code Activity Bar -->
         <div id="activity-bar">
             <div class="activity-icon active" title="Dashboard" onclick="switchNav('dashboard')"><i class="fas fa-chart-line"></i></div>
             <div class="activity-icon" title="Console & Models" onclick="switchNav('console')"><i class="fas fa-terminal"></i></div>
             <div class="activity-icon" title="Database Insights" onclick="switchNav('database')"><i class="fas fa-database"></i></div>
-            
             <div style="flex:1;"></div>
             <div class="activity-icon" title="Settings"><i class="fas fa-cog"></i></div>
         </div>
 
-        <!-- Left Pane: Navigation & Task Selection -->
-        <div class="pane" id="left-pane" style="width: 260px;">
-            <div class="pane-header">
-                <span id="left-pane-title">Dashboard</span>
-                <i class="fas fa-bars" title="Squeeze/Hide Sidebar" onclick="toggleSidebar()"></i>
-            </div>
-            
-            <div class="nav-section">
-                <!-- Expandable Accordion Tab -->
-                <h3 class="nav-title" onclick="toggleAccordion('modes-content', this)">
-                    <i class="fas fa-chevron-down"></i> Active Mode
-                </h3>
+        <div id="main-workspace" style="display:flex; flex:1; overflow:hidden;">
+
+            <!-- =============================== -->
+            <!-- VIEW 1: DATA PIPELINE DASHBOARD -->
+            <!-- =============================== -->
+            <div id="view-dashboard" class="app-view" style="display:flex; flex:1; gap:0.5rem; height:100%;">
                 
-                <div id="modes-content" class="accordion-content">
-                    <button class="mode-btn active" id="btn-distill" onclick="selectMode('distill')">
-                        Knowledge Distillation
-                        <span class="desc">Agent synthesizes raw text into CoT JSON</span>
-                    </button>
-                    
-                    <button class="mode-btn" id="btn-sft" onclick="selectMode('sft')">
-                        Supervised Fine-Tuning
-                        <span class="desc">You provide problem & solution => AI builds data</span>
-                    </button>
+                <!-- Left Pane: Navigation -->
+                <div class="pane" id="left-pane" style="width: 260px;">
+                    <div class="pane-header">
+                        <span id="left-pane-title">Workspace</span>
+                        <i class="fas fa-bars" title="Squeeze/Hide Sidebar" onclick="toggleSidebar()"></i>
+                    </div>
+                    <div class="nav-section">
+                        <h3 class="nav-title" onclick="toggleAccordion('modes-content', this)"><i class="fas fa-chevron-down"></i> Active Mode</h3>
+                        <div id="modes-content" class="accordion-content">
+                            <button class="mode-btn active" id="btn-distill" onclick="selectMode('distill')">
+                                Knowledge Distillation <span class="desc">Agent synthesizes raw text into CoT JSON</span>
+                            </button>
+                            <button class="mode-btn" id="btn-sft" onclick="selectMode('sft')">
+                                Supervised Fine-Tuning <span class="desc">You provide problem & solution => AI builds data</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resizer" id="resizer-left"></div>
+
+                <!-- Middle Pane: The Data Editor -->
+                <div class="pane" id="middle-pane">
+                    <div class="pane-header">
+                        <span id="editor-title">Document Content (JSON)</span>
+                        <span style="font-size: 0.7rem; color: #14b8a6;"><i class="fas fa-circle"></i> Auto-sync Active</span>
+                    </div>
+                    <textarea id="json-editor" placeholder="{\n  // The agent's generated JSON will perfectly render here...\n  // You can manually edit this safely before committing.\n}"></textarea>
+                    <div class="editor-toolbar">
+                        <button class="btn-primary" onclick="commitToDatabase()"><i class="fas fa-rocket"></i> Push to Database</button>
+                    </div>
+                </div>
+
+                <div class="resizer" id="resizer-right"></div>
+
+                <!-- Right Pane: The AI Chat / Context Loop -->
+                <div class="pane" id="right-pane" style="width: 360px;">
+                    <div class="pane-header">Agent Co-Pilot <i class="fas fa-ellipsis-h" style="cursor:pointer;" title="Chat Options"></i></div>
+                    <div id="chat-history">
+                        <div class="chat-bubble bubble-ai">System loaded. Currently operating in <b>Knowledge Distillation</b> mode. What raw text should we process?</div>
+                    </div>
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <input type="text" id="chat-input" placeholder="Instruct the agent..." onkeypress="handleEnter(event)">
+                            <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Resizer Handle 1 -->
-        <div class="resizer" id="resizer-left"></div>
 
-        <!-- Middle Pane: The Data Editor -->
-        <div class="pane" id="middle-pane">
-            <div class="pane-header">
-                <span id="editor-title">Document Content (JSON)</span>
-                <span style="font-size: 0.7rem; color: #14b8a6;"><i class="fas fa-circle"></i> Auto-sync Active</span>
-            </div>
-            <textarea id="json-editor" placeholder="{\n  // The agent's generated JSON will perfectly render here...\n  // You can manually edit this safely before committing.\n}"></textarea>
-            <div class="editor-toolbar">
-                <button class="btn-primary" onclick="commitToDatabase()"><i class="fas fa-rocket"></i> Push to Database</button>
-            </div>
-        </div>
-
-        <!-- Resizer Handle 2 -->
-        <div class="resizer" id="resizer-right"></div>
-
-        <!-- Right Pane: The AI Chat / Context Loop -->
-        <div class="pane" id="right-pane" style="width: 360px;">
-            <div class="pane-header">
-                Agent Co-Pilot
-                <i class="fas fa-ellipsis-h" style="cursor:pointer;" title="Chat Options"></i>
-            </div>
-            
-            <div id="chat-history">
-                <div class="chat-bubble bubble-ai">
-                    System loaded. Currently operating in <b>Knowledge Distillation</b> mode. What raw text should we process?
+            <!-- =============================== -->
+            <!-- VIEW 2: SERVER CONSOLE & MODELS -->
+            <!-- =============================== -->
+            <div id="view-console" class="app-view" style="display:none; flex:1; gap:0.5rem; height:100%;">
+                <div class="pane" style="width: 260px;">
+                    <div class="pane-header">Model Select</div>
+                    <div class="nav-section">
+                        <h3 class="nav-title"><i class="fas fa-robot"></i> Current Engine</h3>
+                        <button class="mode-btn active">Gemini 2.5 Flash <span class="desc">Primary Fast Synthesizer</span></button>
+                    </div>
+                </div>
+                <div class="pane" style="flex:1;">
+                    <div class="pane-header">Terminal / Diagnostics Output</div>
+                    <div class="terminal-win">
+                        <p style="color:#10b981;">> DataForZ Backend Initialized.</p>
+                        <p>> Running on Uvicorn (FastAPI).</p>
+                        <p>> Connect requested... Authenticated via ADC.</p>
+                        <p style="color:#a1a1aa;">> Live server logs will pipe here in Phase 4.</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="chat-input-area">
-                <div class="chat-input-wrapper">
-                    <input type="text" id="chat-input" placeholder="Instruct the agent..." onkeypress="handleEnter(event)">
-                    <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+
+            <!-- =============================== -->
+            <!-- VIEW 3: DATABASE INSIGHTS       -->
+            <!-- =============================== -->
+            <div id="view-database" class="app-view" style="display:none; flex:1; flex-direction:column; height:100%;">
+                <div class="pane" style="flex:1; display:flex; flex-direction:column;">
+                    <div class="pane-header">
+                        <span><i class="fas fa-cloud"></i> Firebase: `training_data` Collection (Latest 25)</span>
+                        <button onclick="loadDatabaseData()" class="btn-primary" style="padding:0.3rem 0.8rem; font-size:0.75rem;"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+                    </div>
+                    <div style="flex:1; overflow-y:auto; padding: 1rem;">
+                        <table id="db-table">
+                            <thead><tr><th style="width:120px;">Doc ID</th><th>Timestamp</th><th>Problem Preview</th><th>Tags</th></tr></thead>
+                            <tbody id="db-tbody">
+                                <tr><td colspan="4" style="text-align:center; padding: 2rem; color:var(--text-muted);">Click Refresh to Fetch Latest Firestore Data</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
 
     <!-- UI Logic -->
@@ -96,103 +129,77 @@
             const resizer = document.getElementById(resizerId);
             const leftEl = document.getElementById(leftElementId);
             const rightEl = document.getElementById(rightElementId);
-            
+            if(!resizer) return;
             let isResizing = false;
 
-            resizer.addEventListener('mousedown', (e) => {
-                isResizing = true;
-                document.body.style.cursor = 'col-resize';
-                resizer.classList.add('resizing');
-            });
-
+            resizer.addEventListener('mousedown', () => { isResizing = true; document.body.style.cursor = 'col-resize'; resizer.classList.add('resizing'); });
             document.addEventListener('mousemove', (e) => {
                 if (!isResizing) return;
-                
                 if (isRightResizer) {
-                    // Right pane resizes from right boundary. e.clientX is absolute mouse X.
-                    // Panel width = total app width - mouseX - padding/margins.
                     const newWidth = document.getElementById('app').clientWidth - e.clientX;
-                    if (newWidth > 200 && newWidth < 800) {
-                        rightEl.style.width = `${newWidth}px`;
-                    }
+                    if (newWidth > 200 && newWidth < 800) rightEl.style.width = `${newWidth}px`;
                 } else {
-                    // Left pane resizes from left boundary (minus the 50px of the Activity Bar)
                     const newWidth = e.clientX - 60; 
-                    if (newWidth > 150 && newWidth < 500) {
-                        leftEl.style.width = `${newWidth}px`;
-                    }
+                    if (newWidth > 150 && newWidth < 500) leftEl.style.width = `${newWidth}px`;
                 }
             });
-
-            document.addEventListener('mouseup', () => {
-                if(isResizing) {
-                    isResizing = false;
-                    document.body.style.cursor = 'default';
-                    resizer.classList.remove('resizing');
-                }
-            });
+            document.addEventListener('mouseup', () => { if(isResizing) { isResizing = false; document.body.style.cursor = 'default'; resizer.classList.remove('resizing'); } });
         }
-
-        // Initialize both drag bars
         initResizer('resizer-left', 'left-pane', 'middle-pane', false);
         initResizer('resizer-right', 'middle-pane', 'right-pane', true);
 
+        // --- 2. View Tab Switching Logic ---
+        function switchNav(viewName) {
+            // Update icons
+            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Hide all views
+            ['dashboard', 'console', 'database'].forEach(v => {
+                document.getElementById('view-' + v).style.display = 'none';
+            });
+            
+            // Show selected view
+            document.getElementById('view-' + viewName).style.display = 'flex';
+            
+            // If we opened the database, aggressively auto-fetch data!
+            if (viewName === 'database') loadDatabaseData();
+        }
 
-        // --- 2. Expandable / Squeezable Sidebars ---
+        // --- 3. Dashboard UI Overrides ---
         function toggleSidebar() {
             const lp = document.getElementById('left-pane');
             const resizer = document.getElementById('resizer-left');
-            if (lp.style.display === 'none') {
-                lp.style.display = 'flex';
-                resizer.style.display = 'block';
-            } else {
-                lp.style.display = 'none';
-                resizer.style.display = 'none';
-            }
+            if (lp.style.display === 'none') { lp.style.display = 'flex'; resizer.style.display = 'block'; } 
+            else { lp.style.display = 'none'; resizer.style.display = 'none'; }
         }
 
         function toggleAccordion(contentId, titleEl) {
-            const content = document.getElementById(contentId);
-            content.classList.toggle('closed');
+            document.getElementById(contentId).classList.toggle('closed');
             titleEl.classList.toggle('closed');
         }
 
-        function switchNav(tabName) {
-            document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-            document.getElementById('left-pane-title').innerText = tabName.charAt(0).toUpperCase() + tabName.slice(1);
-            
-            if (document.getElementById('left-pane').style.display === 'none') {
-                toggleSidebar();
-            }
-        }
-
-        // --- 3. Chat and Mode Logic ---
         let currentMode = "distill";
-
         function selectMode(mode) {
             currentMode = mode;
             document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(`btn-${mode}`).classList.add('active');
-            
-            const chatHistory = document.getElementById('chat-history');
             const modeName = mode === 'distill' ? "Knowledge Distillation" : "SFT (Supervised Fine-Tuning)";
-            
             const sysMsg = document.createElement('div');
             sysMsg.className = 'chat-bubble bubble-ai';
             sysMsg.style.color = '#a1a1aa';
             sysMsg.innerHTML = `<i class="fas fa-info-circle"></i> Switched to <b>${modeName}</b> mode.`;
-            chatHistory.appendChild(sysMsg);
-            chatHistory.scrollTop = chatHistory.scrollHeight;
+            document.getElementById('chat-history').appendChild(sysMsg);
+            document.getElementById('chat-history').scrollTop = document.getElementById('chat-history').scrollHeight;
         }
 
+        // --- 4. Chat Engine Logic ---
         function handleEnter(e) { if (e.key === 'Enter') sendChatMessage(); }
 
         async function sendChatMessage() {
             const inputEl = document.getElementById('chat-input');
             const chatHistory = document.getElementById('chat-history');
             const editor = document.getElementById('json-editor');
-            
             const text = inputEl.value.trim();
             if(!text) return;
 
@@ -200,7 +207,6 @@
             userMsg.className = 'chat-bubble bubble-user';
             userMsg.textContent = text;
             chatHistory.appendChild(userMsg);
-            
             inputEl.value = '';
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
@@ -213,18 +219,10 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
 
             try {
-                // Pass the current mode and existing editor content to the Agent!
-                const documentContext = editor.value.trim();
-                
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: text, 
-                        session_id: "test-session",
-                        mode: currentMode,
-                        document_context: documentContext
-                    })
+                    body: JSON.stringify({ message: text, session_id: "test-session", mode: currentMode, document_context: editor.value.trim() })
                 });
 
                 const data = await response.json();
@@ -233,60 +231,34 @@
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'chat-bubble bubble-ai';
                 
-                // Phase 2: Autonomous Editing Logic
-                // Because of our strict System Prompt, data.reply should be pure JSON.
                 try {
                     const parsedJson = JSON.parse(data.reply);
-                    
-                    // Extract the agent's conversational message
-                    const chatMessage = parsedJson.agent_message || "I have successfully synthesized the data.";
-                    // Remove it from the object so it doesn't get saved to the Database!
+                    const chatMessage = parsedJson.agent_message || "Synthesizing operation complete.";
                     delete parsedJson.agent_message;
-                    
-                    // It is valid JSON! Render it perfectly indented into the Middle Pane.
                     editor.value = JSON.stringify(parsedJson, null, 2);
-                    
-                    // Show the agent's opinion in the chat!
                     aiMsg.innerHTML = `<i class="fas fa-check-circle" style="color:#14b8a6"></i> <b>Document Generated.</b><br><br>${chatMessage}`;
                 } catch(err) {
-                    // Fallback: The agent hallucinated conversational text, so just show it in the chat
-                    console.warn("Could not parse as JSON. Raw output:", data.reply);
                     aiMsg.textContent = data.reply;
                 }
                 
                 chatHistory.appendChild(aiMsg);
-
             } catch(e) {
                 document.getElementById(loadingId).remove();
-                const errMsg = document.createElement('div');
-                errMsg.className = 'chat-bubble bubble-ai';
-                errMsg.style.color = '#f87171';
-                errMsg.textContent = "Error: " + e.message;
-                chatHistory.appendChild(errMsg);
+                chatHistory.innerHTML += `<div class="chat-bubble bubble-ai" style="color:#f87171;">Error: ${e.message}</div>`;
             }
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
+        // --- 5. Database Logic ---
         async function commitToDatabase() {
             const editor = document.getElementById('json-editor');
             const dataText = editor.value.trim();
             const btn = document.querySelector('.btn-primary');
-            const chatHistory = document.getElementById('chat-history');
-            
-            if (!dataText) {
-                alert("Editor is empty. Generate some data first!");
-                return;
-            }
+            if (!dataText) { alert("Editor is empty!"); return; }
 
             let parsedData;
-            try {
-                parsedData = JSON.parse(dataText);
-            } catch (err) {
-                alert("Invalid JSON format. Please fix any syntax errors in the editor before pushing.");
-                return;
-            }
+            try { parsedData = JSON.parse(dataText); } catch (err) { alert("Invalid JSON format."); return; }
 
-            // Visual feedback
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pushing Data...';
             btn.disabled = true;
@@ -295,42 +267,55 @@
                 const response = await fetch('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        collection_name: "training_data",
-                        document_data: parsedData 
-                    })
+                    body: JSON.stringify({ collection_name: "training_data", document_data: parsedData })
                 });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || "Server Error");
-                }
-
+                if (!response.ok) throw new Error("Server Error");
                 const result = await response.json();
                 
-                // Show amazing success state!
                 btn.innerHTML = '<i class="fas fa-check"></i> Success!';
                 btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-                btn.style.boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; btn.disabled = false; }, 2500);
                 
-                setTimeout(() => {
-                    btn.innerHTML = originalText;
-                    btn.style.background = '';
-                    btn.style.boxShadow = '';
-                    btn.disabled = false;
-                }, 2500);
-                
-                // Ping the Chat system!
-                const sysMsg = document.createElement('div');
-                sysMsg.className = 'chat-bubble bubble-ai';
-                sysMsg.innerHTML = `<i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>The current document was successfully committed to Firestore.<br><span style="font-size:0.7rem;color:#94a3b8">Doc ID: ${result.doc_id}</span>`;
-                chatHistory.appendChild(sysMsg);
-                chatHistory.scrollTop = chatHistory.scrollHeight;
-
+                document.getElementById('chat-history').innerHTML += `<div class="chat-bubble bubble-ai"><i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>Doc ID: ${result.doc_id}</div>`;
             } catch (err) {
                 alert("Database push failed: " + err.message);
-                btn.innerHTML = originalText;
-                btn.disabled = false;
+                btn.innerHTML = originalText; btn.disabled = false;
+            }
+        }
+
+        async function loadDatabaseData() {
+            const tbody = document.getElementById('db-tbody');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Fetching Live Datastore...</td></tr>';
+            
+            try {
+                const response = await fetch('/api/database/data');
+                if(!response.ok) throw new Error("Could not fetch data");
+                const resData = await response.json();
+                
+                const tableData = resData.data;
+                if(tableData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#a1a1aa;">No training data documents found inside Firestore yet.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                tableData.forEach(row => {
+                    const tagsHTML = row.tags ? row.tags.map(t => `<span style="background:rgba(14,165,233,0.2); padding:2px 6px; border-radius:4px; font-size:0.75rem; margin-right:4px;">${t}</span>`).join('') : '';
+                    const timeStr = row.timestamp ? new Date(row.timestamp).toLocaleString() : 'Just now';
+                    const probPreview = row.problem ? (row.problem.substring(0, 60) + '...') : 'No problem text';
+                    
+                    const tr = document.createElement('tr');
+                    tr.style.cursor = 'pointer';
+                    tr.innerHTML = `
+                        <td style="font-family:'Fira Code', monospace; color:var(--accent-secondary);">${row.id.substring(0,6)}...</td>
+                        <td style="color:#a1a1aa; font-size:0.75rem;">${timeStr}</td>
+                        <td>${probPreview}</td>
+                        <td>${tagsHTML}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#f87171;">Error fetching data: ${e.message}</td></tr>`;
             }
         }
     </script>
