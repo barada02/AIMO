@@ -13,9 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from typing import Dict, Any
-import firebase_admin
-from firebase_admin import credentials
-from firebase_admin import firestore
+from google.cloud import firestore
 
 # Import our modular agent runner logic
 from src.agent_runner.runner import run_chat_agent
@@ -30,26 +28,12 @@ app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__
 PROJECT_ID = "geminilive-488617"
 # --- 1. Initialize Firebase DB ---
 try:
-    if not firebase_admin._apps:
-        firebase_env = os.environ.get("FIREBASE_CREDENTIALS")
-        if firebase_env:
-             print(f"Loaded FIREBASE_CREDENTIALS env var of length: {len(firebase_env)}")
-             print(f"Sample: {firebase_env[:15]}...{firebase_env[-15:]}")
-             # Parse the JSON string directly from a Cloud Run Secret Environment Variable
-             cred_dict = json.loads(firebase_env)
-             cred = credentials.Certificate(cred_dict)
-             firebase_admin.initialize_app(cred, options={'projectId': PROJECT_ID})
-             print("✅ Firebase initialized dynamically via Environment Variable Secret.")
-        else:
-             # Auto-detect Google Cloud Run Application Default Credentials (ADC)
-             print("FIREBASE_CREDENTIALS not found in environment.")
-             firebase_admin.initialize_app(options={
-                 'projectId': PROJECT_ID
-             })
-             print("✅ Firebase initialized securely using Cloud Run Default Credentials.")
-    db = firestore.client(database="dataforz-1")
+    # Automatically uses Application Default Credentials (ADC) on Cloud Run
+    # Locally, it relies on GOOGLE_APPLICATION_CREDENTIALS env var
+    db = firestore.Client(project=PROJECT_ID, database="dataforz-1")
+    print("✅ Firestore initialized securely using google-cloud-firestore.")
 except Exception as e:
-    print(f"⚠️ Warning: Firebase initialization failed. Start without DB? Error: {e}")
+    print(f"⚠️ Warning: Firestore initialization failed. Start without DB? Error: {e}")
     db = None
 
 
