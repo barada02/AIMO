@@ -31,19 +31,18 @@ PROJECT_ID = "geminilive-488617"
 # --- 1. Initialize Firebase DB ---
 try:
     if not firebase_admin._apps:
-        # Check if local dev credential file exists
-        if os.path.exists("firebase-credentials.json"):
-             cred = credentials.Certificate("firebase-credentials.json")
-             firebase_admin.initialize_app(cred, options={'projectId': PROJECT_ID})
-             print("✅ Firebase initialized with local dev credentials file.")
-        elif os.environ.get("FIREBASE_CREDENTIALS"):
+        firebase_env = os.environ.get("FIREBASE_CREDENTIALS")
+        if firebase_env:
+             print(f"Loaded FIREBASE_CREDENTIALS env var of length: {len(firebase_env)}")
+             print(f"Sample: {firebase_env[:15]}...{firebase_env[-15:]}")
              # Parse the JSON string directly from a Cloud Run Secret Environment Variable
-             cred_dict = json.loads(os.environ.get("FIREBASE_CREDENTIALS"))
+             cred_dict = json.loads(firebase_env)
              cred = credentials.Certificate(cred_dict)
              firebase_admin.initialize_app(cred, options={'projectId': PROJECT_ID})
              print("✅ Firebase initialized dynamically via Environment Variable Secret.")
         else:
              # Auto-detect Google Cloud Run Application Default Credentials (ADC)
+             print("FIREBASE_CREDENTIALS not found in environment.")
              firebase_admin.initialize_app(options={
                  'projectId': PROJECT_ID
              })
