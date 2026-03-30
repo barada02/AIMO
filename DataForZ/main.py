@@ -28,8 +28,13 @@ app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__
 PROJECT_ID = "geminilive-488617"
 # --- 1. Initialize Firebase DB ---
 try:
+    # If testing locally with a credentials file, set the env var automatically
+    if os.path.exists("firebase-credentials.json"):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.abspath("firebase-credentials.json")
+        print("🔧 Configured local development credentials.")
+
     # Automatically uses Application Default Credentials (ADC) on Cloud Run
-    # Locally, it relies on GOOGLE_APPLICATION_CREDENTIALS env var
+    # Locally, it relies on the GOOGLE_APPLICATION_CREDENTIALS env var we just set
     db = firestore.Client(project=PROJECT_ID, database="dataforz-1")
     print("✅ Firestore initialized securely using google-cloud-firestore.")
 except Exception as e:
