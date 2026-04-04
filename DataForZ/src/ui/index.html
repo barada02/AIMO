@@ -149,18 +149,37 @@
         initResizer('resizer-right', 'middle-pane', 'right-pane', true);
 
         // --- 2. View Tab Switching Logic ---
+        let activeViewName = 'dashboard';
+
         function switchNav(viewName) {
+            const el = event.currentTarget;
+
+            // Specific toggle behavior: if we click the active icon, we hide/show the navigation pane!
+            if (activeViewName === viewName && viewName === 'dashboard') {
+                toggleSidebar();
+                return;
+            }
+            
+            activeViewName = viewName;
+
             // Update icons
             document.querySelectorAll('.activity-icon').forEach(i => i.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            el.classList.add('active');
             
             // Hide all views
             ['dashboard', 'console', 'database'].forEach(v => {
-                document.getElementById('view-' + v).style.display = 'none';
+                const domView = document.getElementById('view-' + v);
+                if (domView) domView.style.display = 'none';
             });
             
             // Show selected view
             document.getElementById('view-' + viewName).style.display = 'flex';
+
+            // Ensure left sidebar is always visible when navigating freshly to Dashboard
+            if (viewName === 'dashboard') {
+                document.getElementById('left-pane').style.display = 'flex';
+                document.getElementById('resizer-left').style.display = 'block';
+            }
             
             // If we opened the database, aggressively auto-fetch data!
             if (viewName === 'database') loadDatabaseData();
