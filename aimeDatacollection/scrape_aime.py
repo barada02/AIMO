@@ -88,8 +88,8 @@ def main():
             set_name = s if s else 'AIME'
             print(f"Scraping {year} {set_name}")
             
-            # Limiting to 1-3 for testing purposes (first 2 problems)
-            for i in range(1, 3):
+            # Limiting to 1-3 for testing purposes (first 3 problems)
+            for i in range(1, 4):
                 if s:
                     title = f"{year}_AIME_{s}_Problems/Problem_{i}"
                 else:
