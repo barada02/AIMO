@@ -38,7 +38,8 @@ def scrape_problem_page(url):
     section_content = []
     
     for elem in content.children:
-        if getattr(elem, 'name', None) in ['h1', 'h2', 'h3', 'h4']:
+        # Only split sections on h1 and h2 (major headers like "Problem" and "Solution 1")
+        if getattr(elem, 'name', None) in ['h1', 'h2']:
             # Save previous section
             text = '\n'.join([p.text.strip() for p in section_content if getattr(p, 'text', '').strip()])
             if text:
@@ -48,6 +49,7 @@ def scrape_problem_page(url):
             current_section = elem.text.replace('[edit]', '').strip()
             section_content = []
         elif getattr(elem, 'name', None) is not None:
+            # h3, h4, p, ul, ol etc all get added to the current section
             section_content.append(elem)
             
     # Save the last section
