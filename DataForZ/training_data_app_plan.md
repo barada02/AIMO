@@ -68,7 +68,7 @@ The graphical interface is designed similarly to VS Code and the Antigravity pla
 - `document_id`: Auto-generated string
 - `problem_text`: String
 - `source`: String (User input, PDF name)
-- `tags`: Array of Strings
+- `tags`: Array of Strings (Topics: 'Algebra', 'Combinatorics', 'Geometry', or 'Number Theory')
 - `is_root`: Boolean
 
 **Collection: `training_pairs` (The Final Generated Output)**
@@ -86,10 +86,18 @@ The graphical interface is designed similarly to VS Code and the Antigravity pla
 - `completed_tasks`: Integer
 - `status`: String (Running, Paused, Completed, Failed)
 
+**Collection: `topic_tracking` (Dataset Overview & Field Tracking)**
+- `document_id`: "global_stats"
+- `Algebra`: Integer (Count of Algebra problems)
+- `Combinatorics`: Integer (Count of Combinatorics problems)
+- `Geometry`: Integer (Count of Geometry problems)
+- `Number_Theory`: Integer (Count of Number Theory problems)
+- `total_completed`: Integer
+
 ## 6. Model Consistency & Context Engine
 
-To prevent the AI from feeling "lost" or repetitive during long generation sessions, the system implements a persistent "Context Window" feature.
+To maintain high-quality outputs and prevent long-context degradation (hallucinations or repetitive problems), the model incorporates a strict session limit and real-time state injection.
 
-- **How it Works:** A background process tracks your progress in real-time (e.g., "Generated 15 Problem Solving outputs today. Last topic discussed was Calculus. Current active task is Model Distillation").
-- **State Injection:** This meta-context is saved as a status document in Firestore. It is automatically retrieved and prepended to the AI's System Prompt at the start of every new chat interaction in the Right Panel.
-- **The Result:** The model behaves like a consistent human collaborator. It knows exactly what you have achieved today, what schema you are focusing on, and what the last conversation was, allowing it to adapt its tone and outputs without you having to re-explain the state of the project every single time.
+- **Session Limiting (4-5 Problems):** Each interaction session is deliberately capped at 4 to 5 problem generations. Once this limit is reached, a "session refresh" happens to clear cognitive load and ensure the AI's output stays mathematically concise and creative.
+- **Meta-Data Injection:** For each interaction within a session, the system injects a background summary of the already completed problems and the core context from the previous discussion.
+- **Tracking Injection:** The model is fed the live data from the `topic_tracking` collection. Because the model knows exactly how many problems have been generated for Algebra, Combinatorics, Geometry, and Number Theory so far, it is dynamically aware of the dataset's current state and distribution, keeping it focused on what field needs more work without repetitive prompting.
