@@ -27,35 +27,34 @@ markmap:
 
 ## 2. Included Subjects (The 4 Pillars)
 ### 2.1 Algebra
-- **Polynomials:** Roots, Vieta's formulas, factor theorem, symmetric polynomials.
-- **Inequalities:** AM-GM, Cauchy-Schwarz, Jensen's, rearrangement inequality (mostly restricted to integer bounds for the final answer).
+- **Polynomials & Equations:** Roots, Vieta's formulas, factor theorem, symmetric polynomials.
+- **Inequalities:** AM-GM, Cauchy-Schwarz, Schur, Jensen's, rearrangement inequality (mostly restricted to integer bounds for the final answer).
 - **Sequences & Series:** Arithmetic/geometric progressions, telescoping sums, recurrence relations.
 - **Functional Equations:** Finding functions or values of functions given algebraic rules.
-- **Complex Numbers:** Roots of unity, De Moivre's theorem (applied to algebra/geometry).
+- **Complex Numbers:** Roots of unity, basic complex numbers, De Moivre's theorem.
 ### 2.2 Combinatorics (Discrete Math)
-- **Advanced Counting:** Permutations, combinations, stars & bars, principle of inclusion-exclusion (PIE).
-- **Generating Functions:** Using polynomials/series to count configurations.
-- **Pigeonhole Principle:** Formulating worst-case bounds.
-- **Discrete Probability:** Only where answers map to integers/modulos (e.g. expected values, counting favorable outcomes).
-- **Graph Theory & Game Theory:** Tournaments, coloring problems, invariants, monovariants (No diagrams, must map to integer answers).
+- **Advanced Counting:** Counting principles, binomial coefficients/identities, stars & bars, principle of inclusion-exclusion (PIE).
+- **Generating Functions:** Using polynomials/series to count configurations (basic).
+- **Pigeonhole & Extremal:** Pigeonhole principle, invariance/extremal principles.
+- **Graph Theory & Recurrences:** Basic graph theory (trees, matchings, coloring), recurrence relations (No diagrams, must map to integer answers).
 ### 2.3 Geometry (Text-Only)
-- **Triangle/Circle Geometry:** Incenter, circumcenter, orthocenter, 9-point circle, Euler line.
-- **Cyclic Quadrilaterals:** Ptolemy's theorem, inscribed angles, Power of a Point.
-- **Transformations:** Homothety, inversion, rotation, translation.
-- **Analytic/Trigonometric:** Law of sines/cosines, coordinate geometry, complex numbers in geometry.
+- **Euclidean Plane Geometry:** Triangles, circles, quadrilaterals, congruence/similarity, Ceva/Menelaus.
+- **Cyclic Quadrilaterals & Circles:** Ptolemy's theorem, inscribed angles, Power of a Point.
+- **Transformations & Vectors:** Homothety, inversion, rotation, translation, isometries, vectors, projective (rare but possible).
+- **Analytic, Trig & Solid:** Law of sines/cosines, coordinate geometry, trigonometry in geometry, basic solid geometry.
 - *Strict Rule:* Must practice translating purely verbal geometric constructions into abstract models/code.
 ### 2.4 Number Theory
 - **Divisibility & Primes:** Prime factorization, greatest common divisor (GCD), Euclidean algorithm.
 - **Modular Arithmetic:** Fermat's Little Theorem, Euler's Totient function, Chinese Remainder Theorem (CRT).
-- **Diophantine Equations:** Pell's equation, Pythagorean triples, finding integer solutions to polynomial equations.
-- **Advanced Tools:** Lifting the Exponent Lemma (LTE), order of an element modulo n.
+- **Diophantine Equations:** Linear/quadratic Diophantine equations, Pell's equation, Pythagorean triples.
+- **Advanced Tools:** Lifting the Exponent Lemma (LTE), order of an element modulo n, quadratic reciprocity, p-adic valuation (basic), floor/ceiling functions.
 
 ## 3. STRICTLY OUT OF SCOPE (Avoid these when generating datasets!)
 ### Excluded Math Domains 🚫
-- **Calculus:** Limits, Derivatives, Integration, Differential Equations (Not tested in IMO/AIME).
-- **Advanced Linear Algebra:** Matrix transformations, eigenvalues/eigenvectors, vector spaces.
-- **Abstract Algebra:** Group theory, Ring theory, Fields.
-- **Continuous Statistics:** Normal distributions, standard deviations, t-tests, continuous random variables.
+- **Algebra Exclusions:** Abstract algebra (groups, rings, fields), linear algebra (matrices, eigenvalues), calculus, limits, series convergence, differential equations.
+- **Combinatorics Exclusions:** Advanced probability (expectation, martingales), game theory, advanced enumerative identities (hook-length, etc.), continuous statistics (normal distributions, standard deviations, t-tests).
+- **Geometry Exclusions:** Conic sections (beyond basic), advanced solid geometry, differential geometry, algebraic geometry.
+- **Number Theory Exclusions:** Analytic number theory, advanced Diophantine (beyond quadratic), elliptic curves.
 ### Unusable Formats 🚫
 - Problems requiring a diagram to understand the setup.
 - Problems where the answer is negative, a fraction (like $3/4$), $\pi$, or an irrational number (like $\sqrt{2}$).
