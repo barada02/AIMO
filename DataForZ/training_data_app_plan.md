@@ -13,6 +13,13 @@ A web application designed to generate, refine, and manage high-quality training
 ## 3. Operational Process & Agent Workflows
 The application operates on an "Agent Runner" paradigm, where the backend orchestrates autonomous generation that the user can supervise via the GUI.
 
+### Multi-Agent Architecture for Complex Reasoning
+To maximize the reasoning capabilities of the models and structure complex workflows like variant generation, the platform utilizes a specialized multi-agent network. Tasks are separated based on cognitive load:
+
+- **Coordinator Agent (`gemini-2.5-flash`)**: The "Manager". Fast and efficient. It acts as the routing layer, analyzing the user's intent. If the user asks for variations of a problem, it proposes 3-4 distinct strategic angles (e.g., "Change the underlying geometry to coordinate mechanics", "Invert the goal constraints") and delegates the heavy lifting to the Reasoning Agent.
+- **Math Reasoning Agent (`gemini-2.5-pro`)**: The "Solver". This agent is instantiated exclusively for heavy mathematical generation and solving. Instructed with extreme rigor, it executes the strategy designed by the Coordinator, synthesizing the complex step-by-step Chain-of-Thought (CoT) and ensuring mathematical accuracy.
+- **Critic Agent (`gemini-2.5-flash`)**: The "Reviewer". Takes the Math Reasoning Agent's output, verifies the structural integrity (e.g., strict JSON formatting), double-checks for common computational hallucinations, and finalizes the payload for the frontend UI.
+
 ### Workflow A: Supervised Fine-Tuning (SFT) Chat & Refinement
 1. **User Action:** Submits a raw math problem and an initial solution via the GUI.
 2. **Agent Runner:** Spawns a "Review Agent."
@@ -26,10 +33,12 @@ The application operates on an "Agent Runner" paradigm, where the backend orches
 4. **Finalization:** The user audits a random sample of the generated CoT data and clicks "Commit Batch" to save them to Firestore.
 
 ### Workflow C: Problem Variabilization (Data Enrichment)
-1. **User Action:** Selects a high-quality "Root" problem in the GUI.
-2. **Agent Runner:** Instructs a "Variant Agent" to alter numbers and contexts while preserving logic, generating new problems.
-3. **Review Process:** The GUI presents the original alongside the generated variants in a side-by-side modal.
-4. **Finalization:** User toggles which variants are mathematically sound and pushes them to Firestore, maintaining a parent-child relationship.
+We employ a **Sequential Multi-Agent Architecture** to generate mathematically robust problem variations:
+1. **User Action:** The user inputs a "Root" problem and its verified solution into the GUI and selects the "Variant Generation" mode.
+2. **Strategy Agent (Coordinator):** Analyzing the root problem, this agent proposes 3-4 distinct variant strategies (e.g., "Change the constants," "Invert the goal," "Shift context to a real-world scenario").
+3. **Generator Agent:** For the chosen strategies, the Generator Agent sequentially synthesizes brand new problems along with full Chain-of-Thought (CoT) solutions.
+4. **Review Process:** The generated variants appear in the GUI Editor panel, allowing the user to view the new data side-by-side with the original.
+5. **Finalization:** The user reviews and commits the variants. The system automatically inspects the problem's tags, routing it to the appropriate topic collection. It saves a `parent_id` referencing the original Root problem.
 
 ## 4. GUI Layout & Control Center (VS Code Style)
 
@@ -64,34 +73,36 @@ The graphical interface is designed similarly to VS Code and the Antigravity pla
 
 ## 5. Database Schema (Firestore Collections)
 
-**Collection: `problems` (The Root Data)**
+To ensure clean organization and facilitate dataset analysis (e.g., knowing exactly how many problems exist for a specific topic), data is divided into different collections based on the AI's tagging.
+
+**Topic Collections (`algebra`, `combinatorics`, `geometry`, `number_theory`, `miscellaneous`)**
+Each collection stores the final generated problem-solution documents.
 - `document_id`: Auto-generated string
-- `problem_text`: String
+- `problem_text`: String (The math problem)
+- `reasoning_steps`: Array of Strings (The step-by-step logic)
+- `solution`: String (The final answer)
+- `tags`: Array of Strings (e.g., ['algebra', 'sft'])
 - `source`: String (User input, PDF name)
-- `tags`: Array of Strings (Topics: 'Algebra', 'Combinatorics', 'Geometry', or 'Number Theory')
-- `is_root`: Boolean
-
-**Collection: `training_pairs` (The Final Generated Output)**
-- `document_id`: Auto-generated string
-- `problem_id`: Reference string to `problems`
-- `conversation`: Array of Objects (Simulating JSON structure for LLM training: `{"role": "user", "content": "..."}`)
 - `generation_method`: String (Human, Agent_Distillation, Agent_Variant)
-- `status`: String (Draft, Approved, Exported)
-- `parent_id`: Reference string (if it's a variant of another problem)
+- `parent_id`: Reference string (If this is a variant, the ID of the root problem it derived from; otherwise null)
+- `timestamp`: Firestore Timestamp
 
-**Collection: `agent_jobs` (State Management)**
+***Routing Logic:*** *When pushing to the database, the backend inspects the `tags` array. If exactly one main topic tag (e.g., "algebra") is found, it routes to that collection. If multiple topics are found (e.g., algebra AND geometry), or if no topic is found, it saves to the `miscellaneous` collection.*
+
+**Collection: `agent_jobs` (Batch State Management)**
 - `document_id`: Auto-generated string
 - `job_type`: String (Batch Distillation, PDF Parser)
 - `total_tasks`: Integer
 - `completed_tasks`: Integer
 - `status`: String (Running, Paused, Completed, Failed)
 
-**Collection: `topic_tracking` (Dataset Overview & Field Tracking)**
+**Collection: `topic_tracking` (Dataset Overview & Insights)**
 - `document_id`: "global_stats"
-- `Algebra`: Integer (Count of Algebra problems)
-- `Combinatorics`: Integer (Count of Combinatorics problems)
-- `Geometry`: Integer (Count of Geometry problems)
-- `Number_Theory`: Integer (Count of Number Theory problems)
+- `algebra_count`: Integer
+- `combinatorics_count`: Integer
+- `geometry_count`: Integer
+- `number_theory_count`: Integer
+- `miscellaneous_count`: Integer
 - `total_completed`: Integer
 
 ## 6. Model Consistency & Context Engine
