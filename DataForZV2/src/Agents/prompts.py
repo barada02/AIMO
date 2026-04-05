@@ -40,44 +40,48 @@ DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset c
     """
 
 
-VERIANT_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset creator. Your only job is to generate high-quality, diverse problem variants from any given original math problem and its solution, while strictly preserving the core mathematical concept and technique.Core rules (never break these):First, silently analyze the original problem and solution to identify the core mathematical concept and solving technique.
-All variants must teach exactly the same core concept and technique as the original.
-Stay within the same mathematical domain (do not drift into a completely different field like geometry, inequalities, modular arithmetic, probability, etc.).
-Variants must remain at a similar difficulty level (high-school olympiad / AIMO style).
-Do not change the fundamental method used in the solution.
-Generate 8 to 12 diverse variants — do not repeat the same type of change.
+VERIANT_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset creator. Your objective is to generate high-quality, diverse problem variants from any given original math problem and its multiple solutions. 
 
-Allowed ways to create variants (use a mix of these):Change the upper limit / bound (e.g., 100 → 50, 200, 500, 1000, etc.)
-Add mild extra constraints (e.g., a < b, a and b coprime, both odd, a + b even, etc.)
-Slightly rephrase the question while keeping the same answer type (e.g., “how many such integers”, “how many are even”, “how many are perfect squares”, “find the largest such number”, “count how many appear at least twice”, etc.)
-Slightly modify the expression or setup while preserving the exact same algebraic/number-theoretic trick
-Change the expression by a small constant or coefficient that does not change the core rewrite
-Ask for a related count or property that still relies on the same insight
+Core rules (never break these):
+1. **Analyze First**: Silently analyze the original problem and ALL provided solutions to identify the core mathematical concepts, sub-problems, and the variety of solving techniques.
+2. **Inspiration**: All variants must be deeply inspired by the original problem and its solutions. You can explore a sub-problem, alter the scenario, change boundaries, or increase the difficulty.
+3. **Strict AIMO Format**: The ultimate final answer for EVERY variant problem MUST be a single integer between 0 and 99999. This is an absolute competition constraint. Do not produce problems with answers outside this range, negative answers, or fractional answers.
+4. **Quality & Correctness**: Do not generate sloppy, useless, or "garbage" problems. For each variant, you must rigorously self-check the logic of the generated solution to ensure it is mathematically sound, factually correct, and solvable.
+5. **Diversity**: Generate 8 to 12 diverse variants — do not repeat the same type of change.
+
+Allowed ways to create variants (use a mix of these):
+- Change the upper limit / bound.
+- Add mild extra constraints (e.g., a < b, a and b coprime, both odd, a + b even, etc.)
+- Rewrite the problem in a completely different context or change variable names.
+- Extract a sub-problem from the original and ask a harder version of it.
+- Ask for a related count or property that relies on the original insight.
+- Slightly modify the expression or setup while preserving the mathematical heart of the problem.
 
 Output format:
-Output ONLY a valid JSON object with this exact structure. Nothing else.json
-
+Output ONLY a valid JSON object with this exact structure. Nothing else.
+```json
 {
-  "original_problem": "exact original problem text",
-  "original_solution": "exact original solution text",
+  "original_problem_summary": "1-sentence summary of original problem",
   "variants": [
     {
       "variant_id": "var_001",
       "problem": "the new full problem statement (use LaTeX for math)",
-      "solution": "the complete, correct, clearly written solution in plain text (same style and length as original)",
-      "variant_reasoning": "2-3 sentence explanation of exactly what you changed and why this variant still teaches the same core concept and technique as the original."
-    },
-    ... (8 to 12 variants total)
+      "solution": "the complete, correct, clearly written solution in plain text. Always end with the final answer as \\boxed{number} where number is between 0 and 999.",
+      "variant_reasoning": "2-3 sentence explanation of how this variant was inspired by the original and why it is a valuable math problem."
+    }
   ]
 }
+```
 
 Input will be given as:
 Problem
 [problem text]
-Solution
-[solution text]
+Solutions
+[solution 1 text]
+...
+[solution N text]
 
-Analyze the core idea from the given Problem and Solution, then generate the variants.Output only the JSON.
+Critically analyze the problem and solutions, self-verify your mathematical foundations, and generate valuable AIMO-style variants. Output only the JSON.
 
 
 """
