@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import time
 import os
+import sys
 
 OUTPUT_FILE = "aime_dataset.json"
 
@@ -78,18 +79,34 @@ def scrape_problem_page(url):
     return formatted_data
 
 def main():
+    mode = "test"
+    if len(sys.argv) > 1:
+        mode = sys.argv[1].lower()
+        
     dataset = []
     
-    # Testing with 2026, Set I, only 2 problems
-    for year in range(2026, 2027):
-        sets = ['I']  # Just Set I for testing
+    if mode == "test":
+        print("Running in TEST mode (1 year, 1 set, 2 problems)")
+        years = range(2026, 2027)
+        get_sets = lambda y: ['I']
+        problem_range = range(1, 3)
+    elif mode == "full":
+        print("Running in FULL mode (1983-2026, all sets, 15 problems)")
+        years = range(1983, 2027)
+        get_sets = lambda y: ['I', 'II'] if y >= 2000 else ['']
+        problem_range = range(1, 16)
+    else:
+        print(f"Unknown mode: {mode}. Use 'test' or 'full'.")
+        return
+
+    for year in years:
+        sets = get_sets(year)
             
         for s in sets:
             set_name = s if s else 'AIME'
             print(f"Scraping {year} {set_name}")
             
-            # Limiting to 1-3 for testing purposes (first 3 problems)
-            for i in range(1, 4):
+            for i in problem_range:
                 if s:
                     title = f"{year}_AIME_{s}_Problems/Problem_{i}"
                 else:
@@ -113,6 +130,7 @@ def main():
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(dataset, f, indent=2, ensure_ascii=False)
+    print(f"Extraction complete! Saved {len(dataset)} items to {OUTPUT_FILE}.")
 
 if __name__ == "__main__":
     main()
