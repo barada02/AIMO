@@ -9,7 +9,7 @@ coordinator_agent = Agent(
 )
 
 # 2. The Math Reasoning Agent: Deep thinking, calculation, and generation
-math_reasoning_agent = Agent(
+math_reasoning_agent = Agent(              
     name='math_reasoning_agent',
     model='gemini-2.5-pro',
     description='Handles complex mathematical problem solving and CoT generation.',

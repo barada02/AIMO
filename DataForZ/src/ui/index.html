@@ -110,9 +110,9 @@
                     </div>
                     <div style="flex:1; overflow-y:auto; padding: 1rem;">
                         <table id="db-table">
-                            <thead><tr><th style="width:120px;">Doc ID</th><th>Timestamp</th><th>Problem Preview</th><th>Tags</th></tr></thead>
+                            <thead><tr><th style="width:120px;">Doc ID</th><th>Timestamp</th><th>Problem Preview</th><th>Tags</th><th>Action</th></tr></thead>
                             <tbody id="db-tbody">
-                                <tr><td colspan="4" style="text-align:center; padding: 2rem; color:var(--text-muted);">Click Refresh to Fetch Latest Firestore Data</td></tr>
+                                <tr><td colspan="5" style="text-align:center; padding: 2rem; color:var(--text-muted);">Click Refresh to Fetch Latest Firestore Data</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -122,8 +122,27 @@
         </div>
     </div>
 
+    <!-- Variant Generation Modal -->
+    <div id="variant-modal" class="modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; flex-direction:column; align-items:center; justify-content:center;">
+        <div class="modal-content" style="background:#1e1e2e; padding:2rem; border-radius:8px; width:80%; max-width:800px; max-height:80%; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                <h2><i class="fas fa-magic"></i> LangGraph Variant Generator</h2>
+                <i class="fas fa-times" style="cursor:pointer; font-size:1.5rem;" onclick="closeVariantModal()"></i>
+            </div>
+            <div id="variant-modal-body">
+                <p style="color:#a1a1aa; margin-bottom:1rem;">Selected Original Problem ID: <strong id="variant-parent-id" style="color:#14b8a6;"></strong></p>
+                <button class="btn-primary" id="start-variant-btn" onclick="runVariantGeneration()"><i class="fas fa-play"></i> Generate 5 Variants</button>
+                <div id="variant-results" style="margin-top:1.5rem; display:flex; flex-direction:column; gap:1rem;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- UI Logic -->
     <script>
+        let activeParentId = null;
+        let activeGenType = "original";
+        let loadedDbDocs = {}; // Cache to retrieve problem/solution quickly
+
         // --- 1. Resizable Panes Logic ---
         function initResizer(resizerId, leftElementId, rightElementId, isRightResizer) {
             const resizer = document.getElementById(resizerId);
@@ -286,7 +305,12 @@
                 const response = await fetch('/api/commit', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ collection_name: "training_data", document_data: parsedData })
+                    body: JSON.stringify({ 
+                        collection_name: "training_data", 
+                        document_data: parsedData,
+                        parent_id: activeParentId,
+                        generation_type: activeGenType
+                    })
                 });
                 if (!response.ok) throw new Error("Server Error");
                 const result = await response.json();
@@ -295,7 +319,12 @@
                 btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
                 setTimeout(() => { btn.innerHTML = originalText; btn.style.background = ''; btn.disabled = false; }, 2500);
                 
-                document.getElementById('chat-history').innerHTML += `<div class="chat-bubble bubble-ai"><i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>Doc ID: ${result.doc_id}</div>`;
+                document.getElementById('chat-history').innerHTML += `<div class="chat-bubble bubble-ai"><i class="fas fa-database" style="color:#10b981"></i> <b>Dataset Updated!</b><br>Doc ID: ${result.doc_id}<br>Type: ${activeGenType}</div>`;
+                
+                // Reset states
+                activeParentId = null;
+                activeGenType = "original";
+                document.getElementById('editor-title').innerText = "Document Content (JSON)";
             } catch (err) {
                 alert("Database push failed: " + err.message);
                 btn.innerHTML = originalText; btn.disabled = false;
@@ -318,24 +347,113 @@
                 }
                 
                 tbody.innerHTML = '';
+                loadedDbDocs = {};
                 tableData.forEach(row => {
+                    loadedDbDocs[row.id] = row;
                     const tagsHTML = row.tags ? row.tags.map(t => `<span style="background:rgba(14,165,233,0.2); padding:2px 6px; border-radius:4px; font-size:0.75rem; margin-right:4px;">${t}</span>`).join('') : '';
                     const timeStr = row.timestamp ? new Date(row.timestamp).toLocaleString() : 'Just now';
                     const probPreview = row.problem ? (row.problem.substring(0, 60) + '...') : 'No problem text';
+                    
+                    const isOriginal = row.type === 'original' || !row.type;
+                    const typeLabel = isOriginal ? 'Original' : 'Variant';
+                    const actionBtn = isOriginal 
+                        ? `<button class="btn-primary" style="font-size:0.75rem; padding:0.2rem 0.5rem;" onclick="openVariantModal('${row.id}')">Variants</button>` 
+                        : `<span style="font-size:0.75rem; color:#a1a1aa;">Variant (of ${row.parent_id?.substring(0,4)})</span>`;
                     
                     const tr = document.createElement('tr');
                     tr.style.cursor = 'pointer';
                     tr.innerHTML = `
                         <td style="font-family:'Fira Code', monospace; color:var(--accent-secondary);">${row.id.substring(0,6)}...</td>
-                        <td style="color:#a1a1aa; font-size:0.75rem;">${timeStr}</td>
+                        <td style="color:#a1a1aa; font-size:0.75rem;">${timeStr}<br/><span style="color:#14b8a6">${typeLabel}</span></td>
                         <td>${probPreview}</td>
                         <td>${tagsHTML}</td>
+                        <td>${actionBtn}</td>
                     `;
                     tbody.appendChild(tr);
                 });
             } catch(e) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#f87171;">Error fetching data: ${e.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#f87171;">Error fetching data: ${e.message}</td></tr>`;
             }
+        }
+
+        // --- 6. Variant System Logic ---
+        function openVariantModal(docId) {
+            document.getElementById('variant-modal').style.display = 'flex';
+            document.getElementById('variant-parent-id').innerText = docId;
+            document.getElementById('variant-results').innerHTML = '';
+            document.getElementById('start-variant-btn').style.display = 'block';
+        }
+        function closeVariantModal() {
+            document.getElementById('variant-modal').style.display = 'none';
+        }
+
+        async function runVariantGeneration() {
+            const docId = document.getElementById('variant-parent-id').innerText;
+            const doc = loadedDbDocs[docId];
+            if(!doc) { alert("Document not found in cache. Refresh DB."); return; }
+
+            const btn = document.getElementById('start-variant-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Abstracting Graph...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/api/variants/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ problem: doc.problem, solution: doc.solution, tags: doc.tags || [] })
+                });
+                
+                if(!response.ok) throw new Error("Graph computation failed");
+                const resData = await response.json();
+                
+                btn.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-play"></i> Generate 5 Variants';
+                btn.disabled = false;
+
+                const resultsDiv = document.getElementById('variant-results');
+                resultsDiv.innerHTML = `<h3 style="color:#10b981;">Generated 5 Validated Variants</h3>`;
+                
+                resData.variants.forEach((v, idx) => {
+                    const block = document.createElement('div');
+                    block.style.background = '#27273a';
+                    block.style.padding = '1rem';
+                    block.style.borderRadius = '6px';
+                    block.innerHTML = `
+                        <div style="font-weight:bold; margin-bottom:0.5rem; color:var(--accent-primary);">Variant ${idx + 1}</div>
+                        <div style="color:#d4d4d8; font-size:0.9rem; margin-bottom:1rem;">${v.problem}</div>
+                        <button class="btn-primary" style="font-size:0.8rem; padding:0.4rem 0.8rem;" onclick='sendVariantToEditor(${JSON.stringify(v).replace(/'/g, "&#39;")}, "${docId}")'>
+                            <i class="fas fa-share"></i> Send to SFT Editor Pipeline
+                        </button>
+                    `;
+                    resultsDiv.appendChild(block);
+                });
+
+            } catch(e) {
+                btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error: ' + e.message;
+                btn.style.background = '#ef4444';
+                setTimeout(() => { btn.innerHTML = '<i class="fas fa-play"></i> Generate 5 Variants'; btn.style.background = ''; btn.disabled = false; }, 4000);
+            }
+        }
+
+        function sendVariantToEditor(variantObj, parentId) {
+            // Setup state
+            activeParentId = parentId;
+            activeGenType = 'variant';
+            
+            // Format to editor
+            const formatted = {
+                problem: variantObj.problem,
+                reasoning_steps: variantObj.reasoning_steps,
+                solution: variantObj.solution,
+                tags: variantObj.tags
+            };
+            document.getElementById('json-editor').value = JSON.stringify(formatted, null, 2);
+            document.getElementById('editor-title').innerHTML = `Document Content (JSON) - <span style="color:#f59e0b;">Variant Mode (Parent: ${parentId.substring(0,4)})</span>`;
+            
+            // Switch view
+            closeVariantModal();
+            selectMode('sft');
+            switchNav('dashboard');
         }
     </script>
 </body>

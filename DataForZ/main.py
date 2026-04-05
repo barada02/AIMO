@@ -56,6 +56,13 @@ class ChatResponse(BaseModel):
 class CommitRequest(BaseModel):
     collection_name: str = "training_data"
     document_data: Dict[str, Any]
+    parent_id: str = None
+    generation_type: str = "original"
+
+class VariantRequest(BaseModel):
+    problem: str
+    solution: str
+    tags: list = []
 
 # --- API Endpoints ---
 @app.get("/")
@@ -98,16 +105,29 @@ async def commit_endpoint(req: CommitRequest):
     
     try:
         def push_to_db():
-            # Inject a secure backend timestamp to track when the data was generated
-            req.document_data['timestamp'] = firestore.SERVER_TIMESTAMP
+            tags = req.document_data.pop('tags', [])
             
-            # Add new document to the targeted collection
-            doc_ref = db.collection(req.collection_name).add(req.document_data)
-            return doc_ref[1].id
+            pure_data = {
+                "problem": req.document_data.get('problem', ''),
+                "reasoning_steps": req.document_data.get('reasoning_steps', []),
+                "solution": req.document_data.get('solution', '')
+            }
             
-        # Execute the blocking Firestore SDK operation inside a thread pool
+            doc_ref = db.collection("training_data").document()
+            doc_id = doc_ref.id
+            doc_ref.set(pure_data)
+            
+            metadata = {
+                "tags": tags,
+                "type": req.generation_type,
+                "parent_id": req.parent_id,
+                "timestamp": firestore.SERVER_TIMESTAMP
+            }
+            db.collection("training_metadata").document(doc_id).set(metadata)
+            
+            return doc_id
+            
         doc_id = await run_in_threadpool(push_to_db)
-        
         return {"status": "success", "doc_id": doc_id}
         
     except Exception as e:
@@ -117,31 +137,54 @@ async def commit_endpoint(req: CommitRequest):
 @app.get("/api/database/data")
 async def get_database_data():
     """
-    Fetches the latest training data from Firestore directly for the Database Insights tab.
+    Fetches the latest metadata and pure data from Firestore.
     """
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected.")
     try:
         def fetch_db():
             # Get latest 25 documents sorted by generation time
-            docs = db.collection("training_data").order_by(
+            meta_docs = db.collection("training_metadata").order_by(
                 "timestamp", direction=firestore.Query.DESCENDING
             ).limit(25).stream()
             
             results = []
-            for doc in docs:
-                data = doc.to_dict()
-                data['id'] = doc.id
-                # Stringify timestamp so it can pass through standard JSON serialization to UI
-                if 'timestamp' in data and data['timestamp']:
-                    data['timestamp'] = str(data['timestamp'])
-                results.append(data)
+            for doc in meta_docs:
+                meta = doc.to_dict()
+                doc_id = doc.id
+                
+                # Fetch pure data 
+                pure_data_snap = db.collection("training_data").document(doc_id).get()
+                pure_data = pure_data_snap.to_dict() if pure_data_snap.exists else {}
+                
+                combined = {**meta, **pure_data, "id": doc_id}
+                
+                if 'timestamp' in combined and combined['timestamp']:
+                    combined['timestamp'] = str(combined['timestamp'])
+                results.append(combined)
+                
             return results
         
         results = await run_in_threadpool(fetch_db)
         return {"status": "success", "count": len(results), "data": results}
     except Exception as e:
         print(f"Database error during fetch: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/variants/generate")
+async def generate_variants_endpoint(req: VariantRequest):
+    """
+    Passes the problem and solution to LangGraph to generate variants.
+    """
+    try:
+        def run_graph():
+            from variantAgent import generate_variants_graph
+            return generate_variants_graph(req.problem, req.solution, req.tags)
+            
+        variants = await run_in_threadpool(run_graph)
+        return {"status": "success", "variants": variants}
+    except Exception as e:
+        print(f"Error generating variants: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
