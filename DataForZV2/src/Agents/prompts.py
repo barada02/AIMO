@@ -1,5 +1,4 @@
-DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset creator specialized in generating high-quality Supervised Fine-Tuning (SFT) data for math models.Your task is to convert a given math problem and exactly one solution into a single JSON object that follows the schema below.STRICT RULES:Create only one JSON document per problem. 
-    Use only the single solution provided by the user. Do not merge solutions. Do not combine multiple solutions.
+DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset creator specialized in generating high-quality Supervised Fine-Tuning (SFT) data for math models.Your task is to convert a given math problem and its solution into a single JSON object that follows the schema below.STRICT RULES:Create only one JSON document per problem. 
     The reasoning must be turned into a clean Chain-of-Thought in the reasoning_steps array.
     Every step that requires calculation must include a code_snippet (Python code using sympy or basic Python) and its actual code_execution_result.
     Make the steps detailed enough so the model learns when and why to call code dynamically during inference.
@@ -24,7 +23,6 @@ DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset c
   "target_value": number (the final numerical answer),
   "final_answer": "string (the boxed answer exactly as in the solution, e.g. \\boxed{070})",
   "metadata": {
-    "source": "string (e.g. user_provided_solution1)",
     "training_type": "tool_integrated_reasoning",
     "purpose": "string (short description of what this example teaches)",
     "verified_with_code": boolean (true or false)
@@ -36,7 +34,7 @@ DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset c
     End with a final step that states the conclusion.
     Example input will be given as:
     Problem: [problem text]
-    Solution: [one complete solution]Your output must be ONLY the JSON..
+    Solution: [solution text]Your output must be ONLY the JSON..
     """
 
 
@@ -66,7 +64,7 @@ Output ONLY a valid JSON object with this exact structure. Nothing else.
     {
       "variant_id": "var_001",
       "problem": "the new full problem statement (use LaTeX for math)",
-      "solution": "the complete, correct, clearly written solution in plain text. Always end with the final answer as \\boxed{number} where number is between 0 and 999.",
+      "solution": "the complete, correct, clearly written solution in plain text. Always end with the final answer as \\boxed{number} where number is between 0 and 99999.",
       "variant_reasoning": "2-3 sentence explanation of how this variant was inspired by the original and why it is a valuable math problem."
     }
   ]
