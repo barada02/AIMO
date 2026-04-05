@@ -36,30 +36,26 @@ def main():
 
         if "SUCCEEDED" in str(job.state):
             print("\nJob Succeeded!")
-            out_uri = getattr(job, 'output_uri', None)
-            print(f"Output URI: {out_uri}")
             
-            if out_uri:
-                # The output URI is usually a link we can fetch using the API key or it's a Cloud Storage bucket depending on the endpoint.
-                # Usually Google AI Studio batch jobs output a Cloud Storage URL that is publicly readable for a short time, 
-                # or it gives you a URL you can just download with your API key.
-                print(f"\nAttempting to download results...")
+            dest = getattr(job, 'dest', None)
+            file_name = None
+            if dest and getattr(dest, 'file_name', None):
+                file_name = dest.file_name
                 
-                # Check if it's a direct https URL
-                if out_uri.startswith("https://"):
-                    req = urllib.request.Request(out_uri)
-                    try:
-                        with urllib.request.urlopen(req) as response:
-                            data = response.read()
-                            
-                        out_file = "batch_results.jsonl"
-                        with open(out_file, "wb") as f:
-                            f.write(data)
-                        print(f"Successfully downloaded results to: {out_file}")
-                    except Exception as e:
-                        print(f"Could not auto-download. You might need to manually download it: {e}")
-                else:
-                    print("Output URI format unknown or requires a specific API call. Check the URL manually.")
+            print(f"Output File Name: {file_name}")
+            
+            if file_name:
+                print("\nDownloading results via Files API...")
+                try:
+                    # Fetching as a file object
+                    response_bytes = client.files.download(file=file_name)
+                    
+                    out_file = "batch_results.jsonl"
+                    with open(out_file, "wb") as f:
+                        f.write(response_bytes)
+                    print(f"Successfully downloaded results to: {out_file}")
+                except Exception as e:
+                    print(f"[ERROR] Failed to download using the Files API: {e}")
                     
         elif "FAILED" in str(job.state):
             print("\nJob Failed! Check Google Cloud Console / AI Studio for details.")
