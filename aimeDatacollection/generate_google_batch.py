@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 
@@ -105,7 +106,7 @@ def main():
         else:
             custom_key = f"{year}-{prob_num}".replace(" ", "_")
         
-        # Build the exact JSON required for Google GenAI Batch API
+        # Build the exact JSON required for Google GenAI Batch API mapping to a GenerateContentRequest
         request_obj = {
             "key": custom_key,
             "request": {
@@ -114,11 +115,12 @@ def main():
                         "parts": [{"text": user_prompt}]
                     }
                 ],
-                "config": {
-                    "system_instruction": {
-                        "parts": [{"text": VERIANT_AGENT_INSTRUCTION}]
-                    },
-                    "temperature": 0.7
+                "system_instruction": {
+                    "parts": [{"text": VERIANT_AGENT_INSTRUCTION}]
+                },
+                "generation_config": {
+                    "temperature": 0.7,
+                    "response_mime_type": "application/json"
                 }
             }
         }
@@ -137,8 +139,14 @@ def main():
     # ---------------------------------------------------------
     print("\n--- Connecting to Google GenAI ---")
     try:
-        # Note: Set GOOGLE_API_KEY environment variable before running
-        client = genai.Client()
+        load_dotenv()  # Load variables from .env file
+        api_key = os.environ.get("GOOGLE_API_KEY")
+        
+        # When using an API Key (Google AI Studio), project & location are not used. 
+        # (Project & location are only for Vertex AI with Application Default Credentials).
+        client = genai.Client(
+            api_key=api_key
+        )
         
         print(f"Uploading file: {os.path.basename(output_path)} ...")
         uploaded_file = client.files.upload(
