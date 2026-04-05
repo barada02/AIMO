@@ -16,12 +16,10 @@ async def test_agent():
     user_message = """Problem: Find the value of x if 2x + 3 = 7.
 Solution: Subtract 3 from both sides to get 2x = 4. Divide by 2 to get x = 2."""
     session_id = "test-session-123"
-    mode = "SFT Generation"
-    document_context = "Testing context"
     
     print(f"Sending message to agent...")
     try:
-        response, agent_name = await run_chat_agent(user_message, session_id, mode, document_context)
+        response, agent_name = await run_chat_agent(user_message, session_id)
         print(f"\nModel completed.")
         print(f"Agent Name: {agent_name}")
         print(f"Response:\n{response}")

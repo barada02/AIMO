@@ -12,12 +12,10 @@ agent_runner = Runner(
     session_service=session_service
 )
 
-async def run_chat_agent(user_message: str, session_id: str, mode: str, document_context: str) -> tuple[str, str]:
-
-    injected_prompt = f"Mode: {mode}\nDocument Context: {document_context}\nUser Message: {user_message}"
+async def run_chat_agent(user_message: str, session_id: str) -> tuple[str, str]:
 
     events = await agent_runner.run_debug(
-        user_messages=injected_prompt, 
+        user_messages=user_message, 
         session_id=session_id,
         user_id="ui_user"
     )
