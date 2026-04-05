@@ -179,7 +179,7 @@ async def generate_variants_endpoint(req: VariantRequest):
     try:
         def run_graph():
             from variantAgent import generate_variants_graph
-            return generate_variants_graph(req.problem, req.solution, req.tags)
+            return generate_variants_graph(req.problem, req.solution)
             
         variants = await run_in_threadpool(run_graph)
         return {"status": "success", "variants": variants}
