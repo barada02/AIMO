@@ -22,7 +22,6 @@ class ValidationResult(BaseModel):
 class GraphState(TypedDict):
     original_problem: str
     original_solution: str
-    original_tags: List[str]
     variants: List[dict]
 
 # Nodes
@@ -69,8 +68,6 @@ def validate_node(state: GraphState):
             # Update the variant with the verified/corrected problem and solution
             variant['problem'] = result.corrected_problem
             variant['solution'] = result.corrected_solution
-            # Append tags
-            variant['tags'] = state.get('original_tags', []) + ['variant']
             validated_variants.append(variant)
         except Exception as e:
             # If the validator fails to parse, we might still want to pass the uncorrected version or drop it.
@@ -91,11 +88,10 @@ builder.set_entry_point("generate")
 
 variant_runner = builder.compile()
 
-def generate_variants_graph(problem: str, solution: str, tags: List[str]) -> List[dict]:
+def generate_variants_graph(problem: str, solution: str) -> List[dict]:
     initial_state = {
         "original_problem": problem,
         "original_solution": solution,
-        "original_tags": tags,
         "variants": []
     }
     final_state = variant_runner.invoke(initial_state)
