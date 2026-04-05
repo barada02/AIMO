@@ -12,7 +12,7 @@ agent_runner = Runner(
     session_service=session_service
 )
 
-async def run_chat_agent(user_message: str, session_id: str) -> tuple[str, str]:
+async def run_dataforge_agent(user_message: str, session_id: str) -> tuple[str, str]:
 
     events = await agent_runner.run_debug(
         user_messages=user_message, 
