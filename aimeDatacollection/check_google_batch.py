@@ -37,24 +37,55 @@ def main():
     
     try:
         job = client.batches.get(name=job_name)
-        print(f"State: {job.state}")
-        
-        # Check request counts if available in the job object
-        completed = getattr(job, 'completed_request_count', 0)
-        failed = getattr(job, 'failed_request_count', 0)
-        total = getattr(job, 'request_count', 0)
-        
+        print("--- JOB METADATA ---")
+        print(f"Display Name: {getattr(job, 'display_name', 'Unknown')}")
+        print(f"State:        {job.state}")
+        if hasattr(job, 'create_time'):
+            print(f"Created At:   {job.create_time}")
+        if hasattr(job, 'start_time'):
+            print(f"Started At:   {job.start_time}")
+        if hasattr(job, 'end_time'):
+            print(f"Ended At:     {job.end_time}")
+            
+        if job.state == "FAILED":
+            print(f"!!! ERROR: {job.error if hasattr(job, 'error') else 'Unknown Error'}")
+            
+        # Try to find counts in 'state_counts' (Standard 2026 structure)
+        if hasattr(job, 'state_counts') and job.state_counts:
+            completed = getattr(job.state_counts, 'succeeded', 0)
+            failed    = getattr(job.state_counts, 'failed', 0)
+            total     = getattr(job.state_counts, 'total', 0)
+        else:
+            # Fallback to the root attributes just in case
+            completed = getattr(job, 'completed_request_count', 0)
+            failed    = getattr(job, 'failed_request_count', 0)
+            total     = getattr(job, 'request_count', 0)
+
         print(f"Progress: {completed} completed, {failed} failed out of {total} total requests.")
 
         if "SUCCEEDED" in str(job.state):
             print("\nJob Succeeded!")
             
-            dest = getattr(job, 'dest', None)
+            # Extract Result File ID (Checking all possible locations)
             file_name = None
-            if dest and getattr(dest, 'file_name', None):
-                file_name = dest.file_name
+            
+            # Try 'dest'
+            if hasattr(job, 'dest') and job.dest:
+                file_name = getattr(job.dest, 'file_name', job.dest)
+            # Try 'output'
+            elif hasattr(job, 'output') and job.output:
+                file_name = getattr(job.output, 'file_name', job.output)
+            # Try 'output_config'
+            elif hasattr(job, 'output_config') and hasattr(job.output_config, 'file_name'):
+                 file_name = job.output_config.file_name
+                 
+            # MANUAL FALLBACK: If discovery fails, calculate from Job ID
+            if not file_name or not isinstance(file_name, str):
+                job_id_str = job_name.split('/')[-1]
+                file_name = f"files/batch-{job_id_str}"
+                print(f"⚠️ Discovery failed, trying manual fallback ID: {file_name}")
                 
-            print(f"Output File Name: {file_name}")
+            print(f"Final Target File: {file_name}")
             
             if file_name:
                 print("\nDownloading results via Files API...")
