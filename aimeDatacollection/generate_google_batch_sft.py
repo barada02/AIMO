@@ -30,7 +30,16 @@ DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset c
     "purpose": "string (short description of what this example teaches)",
     "verified_with_code": boolean (true or false)
     }
-    }
+    }    
+    MATH NOTATION CONVENTIONS TO FOLLOW:
+    1. Special fractional part: \\{x\\} denotes the fractional part of x (x - \\lfloor x \\rfloor).
+    2. Overline: \\overline{abcd} represents the integer formed by the digits a, b, c, and d.
+    3. Geometry definitions: Use Bourbakist taxonomy (equilateral \\subset isosceles; squares \\subset rectangles \\subset parallelograms). A trapezium is defined as having *at least* one pair of parallel opposite sides.
+    4. Target answers: Every final answer must be an integer between 0 and 99999. Do not take implicit modulo 1000 unless requested by the problem. If the original problem's answer falls outside this range or is a fraction (e.g., M/N), you MUST slightly modify the problem statement and the final solution step so that the target answer becomes an integer within [0, 99999] (for example, by asking for the sum M+N instead of the fraction).
+    5. Empty sets: A sum over an empty set evaluates to 0, and a product evaluates to 1.
+    6. Binomial coefficients: \\binom{n}{k} evaluates to 0 if k < 0.
+    7. LaTeX Packages: Assume amsmath, amssymb, and amsthm are available (e.g., safely use align* environments).
+
     How to build reasoning_steps:Break the given solution into logical steps.
     For every calculation, create a step with actual Python code and its result.
     Keep thoughts clear, natural, and in first-person style as if the model is thinking.
