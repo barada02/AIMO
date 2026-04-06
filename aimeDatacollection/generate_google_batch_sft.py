@@ -88,8 +88,8 @@ def main():
                 },
                 "tools": [{"code_execution": {}}],
                 "generation_config": {
-                    "temperature": 0.7,
-                    "response_mime_type": "application/json"
+                    "temperature": 0.7
+                    
                 }
             }
         }

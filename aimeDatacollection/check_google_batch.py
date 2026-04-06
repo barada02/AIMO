@@ -50,7 +50,7 @@ def main():
                     # Fetching as a file object
                     response_bytes = client.files.download(file=file_name)
                     
-                    out_file = "batch_results.jsonl"
+                    out_file = "sft_batch_results.jsonl"
                     with open(out_file, "wb") as f:
                         f.write(response_bytes)
                     print(f"Successfully downloaded results to: {out_file}")
