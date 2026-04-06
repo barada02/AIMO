@@ -89,7 +89,6 @@ def main():
                 "tools": [{"code_execution": {}}],
                 "generation_config": {
                     "temperature": 0.7
-                    
                 }
             }
         }
@@ -142,7 +141,19 @@ def main():
         print(f"Created batch job successfully!")
         print(f"Job Name: {file_batch_job.name}")
         print(f"Job State: {file_batch_job.state}")
-        print("\nYou can poll the status programmatically by getting the job state.")
+        
+        # Save job information to a JSON file
+        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_batch_job_info.json')
+        job_info = {
+            "file_name": uploaded_file.name,
+            "job_name": file_batch_job.name,
+            "job_state": str(file_batch_job.state)
+        }
+        with open(job_info_path, 'w', encoding='utf-8') as f:
+            json.dump(job_info, f, indent=4)
+            
+        print(f"\nSaved job info to {job_info_path}")
+        print("You can poll the status programmatically by getting the job state.")
         
     except Exception as e:
         print(f"[ERROR] Failed to start Google GenAI batch job: {e}")

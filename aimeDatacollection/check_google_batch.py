@@ -6,13 +6,25 @@ from dotenv import load_dotenv
 from google import genai
 
 def main():
-    if len(sys.argv) < 2:
+    job_name = None
+    if len(sys.argv) >= 2:
+        job_name = sys.argv[1]
+    else:
+        # Try to read from the sft job info file
+        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_batch_job_info.json')
+        if os.path.exists(job_info_path):
+            try:
+                with open(job_info_path, 'r', encoding='utf-8') as f:
+                    job_info = json.load(f)
+                    job_name = job_info.get("job_name")
+            except Exception as e:
+                print(f"[WARNING] Could not read {job_info_path}: {e}")
+        
+    if not job_name:
         print("Usage: python check_google_batch.py <job_name>")
         print("Example: python check_google_batch.py batches/hu7jauh5l8p89xsnfhinnn1yevz6115tmwoe")
         sys.exit(1)
-
-    job_name = sys.argv[1]
-    
+        
     print(f"--- Checking Status for: {job_name} ---")
     
     load_dotenv()
