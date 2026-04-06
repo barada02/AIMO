@@ -10,7 +10,6 @@ DATAFORGE_AGENT_INSTRUCTION = """You are an expert AIMO Progress Prize dataset c
 
     JSON SCHEMA (you must follow this exactly):json
     {
-    "id": "string (unique, e.g. aimo_sft_math_001)",
     "problem": "string (exact problem statement with LaTeX)",
     "topics": ["array of strings: only algebra, geometry, number_theory, combinatorics"],
     "difficulty": "string (easy | medium | hard)",
