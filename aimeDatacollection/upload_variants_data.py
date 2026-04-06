@@ -59,7 +59,11 @@ def main():
     total_lines = 0
 
     print("--- Phase 2: Processing batch_results.jsonl ---")
-    
+
+    failed_lines_path = os.path.join(os.path.dirname(__file__), 'failed_lines.jsonl')
+    # Clear the failed lines file at the start of the run
+    open(failed_lines_path, 'w', encoding='utf-8').close()
+
     with open(batch_file_path, 'r', encoding='utf-8') as f:
         for line in f:
             line = line.strip()
@@ -119,8 +123,10 @@ def main():
                     data = json.loads(fixed_text)
                 except json.JSONDecodeError as je:
                     print(f"  [ERROR] Could not parse LLM JSON for key {batch_key}: {je}")
+                    with open(failed_lines_path, 'a', encoding='utf-8') as err_f:
+                        err_f.write(line + '\n')
                     continue
-                    
+
                 original_summary = data.get('original_problem_summary', '')
                 variants = data.get('variants', [])
                 
@@ -172,9 +178,11 @@ def main():
                     
                     if True:
                         print(f"  ... Uploaded {total_variants_processed} variant records...")
-                        
+
             except Exception as e:
                 print(f"  [ERROR] on line {total_lines}: {e}")
+                with open(failed_lines_path, 'a', encoding='utf-8') as err_f:
+                    err_f.write(line + '\n')
 
     # 4. Save to local JSON files
     raw_local_path = os.path.join(os.path.dirname(__file__), 'aimeVariantRawDataCollection.json')
