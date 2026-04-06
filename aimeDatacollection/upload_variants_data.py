@@ -68,7 +68,7 @@ def main():
                 
             total_lines += 1
             
-            if total_lines % 10 == 0:
+            if True:
                 print(f"Processing JSONL line number {total_lines} ...")
             
             try:
@@ -170,7 +170,7 @@ def main():
                     
                     total_variants_processed += 1
                     
-                    if total_variants_processed % 50 == 0:
+                    if True:
                         print(f"  ... Uploaded {total_variants_processed} variant records...")
                         
             except Exception as e:
