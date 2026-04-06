@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSONL Batch Results Viewer</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #2b2b2b;
+            color: #a9b7c6;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        .error {
+            color: #d32f2f;
+            font-weight: bold;
+        }
+        .key-badge {
+            display: inline-block;
+            background: #e9ecef;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>📊 Batch JSONL Viewer</h2>
+        <p>Select your <code>batch_results.jsonl</code> file to inspect the raw model outputs line by line.</p>
+        
+        <input type="file" id="fileInput" accept=".jsonl,.json,.txt">
+        
+        <div class="controls">
+            <label for="lineInput"><strong>Line Number:</strong></label>
+            <input type="number" id="lineInput" min="1" value="1" disabled>
+            <span id="lineCount">/ 0</span>
+            <button id="viewBtn" disabled>View JSON</button>
+        </div>
+        <div id="status" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
+    </div>
+
+    <div class="card">
+        <h3 style="margin-top: 0; display: flex; align-items: center;">
+            Output Viewer 
+            <span id="keyDisplay" class="key-badge">No Key</span>
+        </h3>
+        <pre id="jsonOutput">Select a file and line number to view details...</pre>
+    </div>
+
+    <script>
+        let lines = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('status').innerText = 'Loading file...';
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const text = e.target.result;
+                // Split by newline and remove any empty lines at the end
+                lines = text.split('\n').filter(line => line.trim().length > 0);
+                
+                document.getElementById('lineCount').innerText = `/ ${lines.length}`;
+                document.getElementById('lineInput').max = lines.length;
+                document.getElementById('lineInput').disabled = false;
+                document.getElementById('viewBtn').disabled = false;
+                
+                document.getElementById('status').innerText = `Loaded ${lines.length} lines successfully.`;
+                viewLine();
+            };
+            
+            reader.readAsText(file);
+        });
+
+        document.getElementById('viewBtn').addEventListener('click', viewLine);
+        document.getElementById('lineInput').addEventListener('change', viewLine);
+
+        function viewLine() {
+            if (lines.length === 0) return;
+            
+            const lineNum = parseInt(document.getElementById('lineInput').value, 10);
+            const outputEl = document.getElementById('jsonOutput');
+            const keyDisplay = document.getElementById('keyDisplay');
+
+            if (isNaN(lineNum) || lineNum < 1 || lineNum > lines.length) {
+                outputEl.innerText = 'Invalid line number.';
+                return;
+            }
+
+            const rawLine = lines[lineNum - 1];
+
+            try {
+                // Parse the main JSONL envelope
+                let obj = JSON.parse(rawLine);
+                
+                keyDisplay.innerText = obj.key || "Unknown Key";
+
+                // Attempt to parse the nested model response string format 
+                // so it displays as pretty nested JSON instead of a massive escaped string block
+                try {
+                    let modelText = obj.response.candidates[0].content.parts[0].text;
+                    let cleanText = modelText.trim();
+                    
+                    // Remove markdown JSON code blocks if present
+                    if (cleanText.startsWith('```json')) cleanText = cleanText.substring(7);
+                    if (cleanText.endsWith('```')) cleanText = cleanText.substring(0, cleanText.length - 3);
+                    
+                    // Try to fix common python ast errors or backslashes
+                    cleanText = cleanText.replace(/\\(?=[^"\\\/bfnrt])/g, '\\\\');
+                    
+                    let parsedModelData = JSON.parse(cleanText.trim());
+                    // Replace the raw string with the parsed object for tree viewing
+                    obj.response.candidates[0].content.parts[0].text_parsed_visually = parsedModelData;
+                } catch (innerErr) {
+                    console.log("Could not parse inner model text as JSON, showing raw string.", innerErr);
+                }
+
+                // Format with 2 spaces indentation
+                outputEl.innerHTML = JSON.stringify(obj, null, 2);
+                outputEl.classList.remove('error');
+
+            } catch (err) {
+                keyDisplay.innerText = "Error";
+                outputEl.classList.add('error');
+                outputEl.innerText = `Failed to parse JSON on this line.\nError: ${err.message}\n\nRaw Line Format:\n${rawLine}`;
+            }
+        }
+    </script>
+</body>
+</html>
