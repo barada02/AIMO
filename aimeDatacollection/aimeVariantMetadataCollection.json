@@ -1,0 +1,222 @@
+[
+    {
+        "problem_id": "7843b878-4ac3-45b1-9d6e-dda0fb03cd8a",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_001",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant increases the size of the array and uses a larger prime divisor (101). It tests the same fundamental formula and boundary analysis while keeping the calculations clean.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "b839e3e4-041e-461a-9f58-4c46096422cd",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_002",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant changes the starting sequence to even integers, which shifts the parity requirements and the constant in the general formula. It also uses a divisor that allows for multiple values of the sum $S$ to be considered.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "92b7ca61-0d42-417f-b6cc-2738c35e78f7",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_003",
+        "original_problem_summary": "",
+        "variant_reasoning": "By using the natural numbers $1, 2, \\dots, 100$ as the starting row, the formula for $a(n, k)$ changes slightly. The choice of divisor 71 allows for two distinct multiples to appear within the triangle's boundaries, requiring more careful summation.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "0162eab1-0390-4e89-b944-2ea1a00fb865",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_004",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses an arithmetic progression with a common difference of 3, which significantly changes the internal linear combination. It requires modular arithmetic to solve the divisibility condition.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "60d11728-40fa-4afc-a959-ad40ef8e26e3",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_005",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant explores a much larger array (1000 rows) with a large prime divisor (997). It tests the ability to handle larger scales and verify multiple possible values of the sum $S$ across a wide range.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "1431b765-af0e-4ed9-a263-9562a1e712c3",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_006",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses a smaller prime divisor relative to the array size, leading to three different multiples of the divisor appearing. This increases the complexity of the counting step.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "0caa7441-0baf-48e5-a21b-8375aed23b3f",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_007",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses a very small prime divisor (11) compared to the row length (50), resulting in many multiples of the divisor appearing throughout the array. It tests the exhaustive counting ability of the solver.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "6f7cf06c-6b4e-462f-95e0-cd3245832c84",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_008",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant features a large prime divisor (199) nearly equal to the number of columns, providing a clean yet slightly more complex scenario than the original problem due to the second multiple of 199.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "7f60f682-4943-4318-98b6-e115692e528e",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_009",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses a small array and small divisor, making it suitable for manual verification if necessary, but still requires the general formulaic approach to be efficient.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "a2db72e6-0b28-4685-ba0f-501358c247b9",
+        "batch_key": "2008-I-6",
+        "variant_id": "var_010",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant is a direct expansion of the original logic to a slightly different starting sequence and a divisor that captures the edge of the triangle's range, requiring careful boundary checks.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 1683,
+        "candidates_token_count": 6096,
+        "total_token_count": 23651
+    },
+    {
+        "problem_id": "708e87db-ff0c-4c32-9973-74ee2bd6d922",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_001",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant replaces perfect squares with perfect cubes. It requires analyzing the gap between consecutive cubes and determining when the gap exceeds the interval size of the sets.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "e4389c48-4d3b-4cbb-abdf-6334a97de5ca",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_002",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses triangular numbers instead of perfect squares. It tests the ability to adapt the gap-analysis logic to a different arithmetic sequence.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "9ec2834d-78f8-479a-8876-5852a4247e85",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_003",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant changes the interval size from 100 to 144 and adjusts the total number of sets to 500. It requires re-calculating the threshold where squares become separated by more than the interval width.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "772fa357-b5cc-4eed-82d2-ede5af366a8f",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_004",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant increases the difficulty by asking for sets with exactly one square instead of sets with no squares. It requires a detailed analysis of the sets where multiple squares occur.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "5fb7aeac-49ba-4abb-9ed5-c966cd781b9a",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_005",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant shifts the range of sets to a region where the gap between consecutive squares is always greater than the interval size. This simplifies the counting logic but requires careful boundary checks.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "a5934df6-839a-4430-a0fd-06bf63b50bac",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_006",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant increases the interval size significantly (to 250). This changes the threshold where the 'one square per set' rule begins, testing the robustness of the solver's method.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "28ed86ba-07a8-4e8f-bbf4-8a0e69985b0a",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_007",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant uses a very small interval size (10). This results in many more sets being empty as squares quickly become sparse relative to the small intervals.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "d018e771-4b62-4d7d-b649-e3bb1592e425",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_008",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant explores fourth powers and a larger interval size. It tests the solver's ability to handle faster-growing sequences and different range constraints.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "99248e0d-3931-4b49-9ffb-a6e3b3c9ddec",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_009",
+        "original_problem_summary": "",
+        "variant_reasoning": "This is a challenging variant that requires counting sets with a specific non-zero number of squares. It forces a complete manual check of the early sets where the square density is high.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    },
+    {
+        "problem_id": "3dba3e25-e87e-4d61-9090-ce3b5540da78",
+        "batch_key": "2008-I-7",
+        "variant_id": "var_010",
+        "original_problem_summary": "",
+        "variant_reasoning": "This variant extends the range of the sets to 2000. It tests the solver's ability to handle a larger number of sets and correctly calculate the total count of sets in the range.",
+        "model_version": "gemini-3-flash-preview",
+        "prompt_token_count": 928,
+        "candidates_token_count": 5128,
+        "total_token_count": 35429
+    }
+]

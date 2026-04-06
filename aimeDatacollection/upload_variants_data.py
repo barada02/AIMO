@@ -5,6 +5,23 @@ from firebase_admin import credentials
 from firebase_admin import firestore
 import os
 
+def delete_collection(db, collection_name, batch_size=500):
+    """Deletes all documents in a specific collection in chunks."""
+    coll_ref = db.collection(collection_name)
+    total_deleted = 0
+    print(f"Cleaning collection: {collection_name} ...")
+    while True:
+        docs = list(coll_ref.limit(batch_size).stream())
+        if not docs:
+            break
+        batch = db.batch()
+        for doc in docs:
+            batch.delete(doc.reference)
+        batch.commit()
+        total_deleted += len(docs)
+        print(f"  ... deleted {total_deleted} documents from {collection_name}")
+    return total_deleted
+
 def main():
     print("--- Parsing and Uploading Variants Data to Firestore ---")
     
@@ -26,6 +43,12 @@ def main():
         print(f"[ERROR] Failed to initialize Firebase: {e}")
         return
 
+    # Clean existing collections before uploading
+    print("\n--- Phase 1: Cleaning Existing Data in Firestore ---")
+    deleted_raw = delete_collection(db, 'aimeVariantRawDataCollection')
+    deleted_meta = delete_collection(db, 'aimeVariantMetadataCollection')
+    print(f"Cleanup finished. Deleted {deleted_raw + deleted_meta} total docs.\n")
+
     raw_collection = db.collection('aimeVariantRawDataCollection')
     meta_collection = db.collection('aimeVariantMetadataCollection')
 
@@ -35,7 +58,7 @@ def main():
     total_variants_processed = 0
     total_lines = 0
 
-    print("Processing batch_results.jsonl ...")
+    print("--- Phase 2: Processing batch_results.jsonl ---")
     
     with open(batch_file_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -45,6 +68,9 @@ def main():
                 
             total_lines += 1
             
+            if total_lines % 10 == 0:
+                print(f"Processing JSONL line number {total_lines} ...")
+            
             try:
                 # 1. Parse the outer JSONL line wrapper
                 obj = json.loads(line)
@@ -52,6 +78,7 @@ def main():
                 
                 response_obj = obj.get('response', {})
                 model_version = response_obj.get('modelVersion', 'unknown-model')
+                usage_metadata = response_obj.get('usageMetadata', {})
                 candidates = response_obj.get('candidates', [])
                 
                 if not candidates:
@@ -127,7 +154,10 @@ def main():
                         'variant_id': variant_id_str, # Identifying ID from LLM
                         'original_problem_summary': original_summary,
                         'variant_reasoning': reasoning_str,
-                        'model_version': model_version
+                        'model_version': model_version,
+                        'prompt_token_count': usage_metadata.get('promptTokenCount', 0),
+                        'candidates_token_count': usage_metadata.get('candidatesTokenCount', 0),
+                        'total_token_count': usage_metadata.get('totalTokenCount', 0)
                     }
                     
                     # Write to Firestore
