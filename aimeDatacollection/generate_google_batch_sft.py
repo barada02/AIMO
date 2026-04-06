@@ -51,7 +51,7 @@ def generate_user_prompt(item):
 def main():
     print("--- Generating Google GenAI Batch Job for SFT ---")
     
-    dataset_path = os.path.join(os.path.dirname(__file__), 'aimeRawDataCollection.json')
+    dataset_path = os.path.join(os.path.dirname(__file__), 'DATA', 'aimeRawDataCollection.json')
     output_path = os.path.join(os.path.dirname(__file__), 'google_batch_requests_sft.jsonl')
     
     try:
@@ -61,9 +61,7 @@ def main():
         print(f"[ERROR] Failed to read dataset: {e}")
         return
 
-    # Processing only the first 3 records for testing
-    print("Running in TEST mode: Processing only the first 3 records for testing.")
-    data = data[:3]
+    print(f"Running in FULL mode: Processing all {len(data)} records.")
 
     requests = []
     for i, item in enumerate(data):
@@ -72,7 +70,7 @@ def main():
             
         user_prompt = generate_user_prompt(item)
         
-        request_id = f"sft-{i+1}"
+        request_id = item.get('id', f"sft-{i+1}")
         
         request_obj = {
             "key": request_id,
