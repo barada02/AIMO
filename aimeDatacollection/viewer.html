@@ -71,6 +71,15 @@
             font-weight: bold;
             margin-left: 10px;
         }
+        .split-view {
+            display: flex;
+            gap: 20px;
+        }
+        .split-view > div {
+            flex: 1;
+            min-width: 0;
+            overflow-x: hidden;
+        }
     </style>
 </head>
 <body>
@@ -90,12 +99,21 @@
         <div id="status" style="margin-top: 10px; font-size: 0.9em; color: #666;"></div>
     </div>
 
-    <div class="card">
-        <h3 style="margin-top: 0; display: flex; align-items: center;">
-            Output Viewer 
-            <span id="keyDisplay" class="key-badge">No Key</span>
-        </h3>
-        <pre id="jsonOutput">Select a file and line number to view details...</pre>
+    <div class="split-view">
+        <div class="card">
+            <h3 style="margin-top: 0; display: flex; align-items: center;">
+                Raw Batch Record 
+                <span id="keyDisplay" class="key-badge">No Key</span>
+            </h3>
+            <pre id="jsonOutputRaw">Select a file and line number to view details...</pre>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-top: 0; display: flex; align-items: center;">
+                Parsed Content ('text' field)
+            </h3>
+            <pre id="jsonOutputParsed">Parsed variants will appear here...</pre>
+        </div>
     </div>
 
     <script>
@@ -132,11 +150,13 @@
             if (lines.length === 0) return;
             
             const lineNum = parseInt(document.getElementById('lineInput').value, 10);
-            const outputEl = document.getElementById('jsonOutput');
+            const outputRaw = document.getElementById('jsonOutputRaw');
+            const outputParsed = document.getElementById('jsonOutputParsed');
             const keyDisplay = document.getElementById('keyDisplay');
 
             if (isNaN(lineNum) || lineNum < 1 || lineNum > lines.length) {
-                outputEl.innerText = 'Invalid line number.';
+                outputRaw.innerText = 'Invalid line number.';
+                outputParsed.innerText = '';
                 return;
             }
 
@@ -147,35 +167,78 @@
                 let obj = JSON.parse(rawLine);
                 
                 keyDisplay.innerText = obj.key || "Unknown Key";
+                
+                // Clone obj to truncate massive base64 fields so the browser doesn't freeze
+                let displayObj = JSON.parse(rawLine);
+                try {
+                    displayObj.response?.candidates?.forEach(c => {
+                        c.content?.parts?.forEach(p => {
+                            // Trim massive thought signatures or base64 blocks
+                            if (typeof p.thoughtSignature === 'string' && p.thoughtSignature.length > 500) {
+                                p.thoughtSignature = `[... TRUNCATED ${p.thoughtSignature.length} chars ...]`;
+                            }
+                            if (typeof p.thought === 'string' && p.thought.length > 2000) {
+                                p.thought = `[... TRUNCATED ${p.thought.length} chars ...]`;
+                            }
+                        });
+                    });
+                } catch(e) {}
+                
+                // CRITICAL FIX: Use textContent instead of innerHTML. 
+                // Math variables like `x < 15` will be parsed as invisible HTML tags by innerHTML!
+                outputRaw.textContent = JSON.stringify(displayObj, null, 2);
+                outputRaw.classList.remove('error');
 
                 // Attempt to parse the nested model response string format 
-                // so it displays as pretty nested JSON instead of a massive escaped string block
                 try {
-                    let modelText = obj.response.candidates[0].content.parts[0].text;
+                    // Handle cases where the text might be in parts[0], parts[1], etc.
+                    let parts = obj.response?.candidates?.[0]?.content?.parts || [];
+                    let modelText = "";
+                    for (let p of parts) {
+                        if (p.text) modelText = p.text;
+                    }
+
+                    if (!modelText) throw new Error("No 'text' field found in the model response parts.");
+
                     let cleanText = modelText.trim();
                     
                     // Remove markdown JSON code blocks if present
                     if (cleanText.startsWith('```json')) cleanText = cleanText.substring(7);
+                    else if (cleanText.startsWith('```')) cleanText = cleanText.substring(3);
+                    
                     if (cleanText.endsWith('```')) cleanText = cleanText.substring(0, cleanText.length - 3);
+                    cleanText = cleanText.trim();
                     
-                    // Try to fix common python ast errors or backslashes
-                    cleanText = cleanText.replace(/\\(?=[^"\\\/bfnrt])/g, '\\\\');
-                    
-                    let parsedModelData = JSON.parse(cleanText.trim());
-                    // Replace the raw string with the parsed object for tree viewing
-                    obj.response.candidates[0].content.parts[0].text_parsed_visually = parsedModelData;
+                    let parsedModelData;
+                    try {
+                        // Attempt 1: Strict JSON parsing
+                        parsedModelData = JSON.parse(cleanText);
+                    } catch (e1) {
+                        try {
+                            // Attempt 2: Forgiving JS parsing (Handles unescaped LaTeX like \b, \f perfectly)
+                            // Since this is a local tool on your machine viewing your own data, this is safe and highly effective.
+                            parsedModelData = new Function("return " + cleanText)();
+                        } catch (e2) {
+                            throw new Error("Strict JSON parse failed: " + e1.message + "\nForgiving parse failed: " + e2.message);
+                        }
+                    }
+
+                    // Show just the parsed content on the right (Using textContent to protect Math < symbols)
+                    outputParsed.textContent = JSON.stringify(parsedModelData, null, 2);
+                    outputParsed.classList.remove('error');
                 } catch (innerErr) {
                     console.log("Could not parse inner model text as JSON, showing raw string.", innerErr);
+                    outputParsed.classList.add('error');
+                    // Fallback to displaying the exact text payload if it totally fails to parse
+                    let fallbackText = obj.response?.candidates?.[0]?.content?.parts?.[0]?.text || "No text available";
+                    outputParsed.innerText = `⚠️ [WARNING] Could not parse the 'text' field as a JSON object.\nError: ${innerErr.message}\n\n--- RAW TEXT CONTENT ---\n\n${fallbackText}`;
                 }
-
-                // Format with 2 spaces indentation
-                outputEl.innerHTML = JSON.stringify(obj, null, 2);
-                outputEl.classList.remove('error');
 
             } catch (err) {
                 keyDisplay.innerText = "Error";
-                outputEl.classList.add('error');
-                outputEl.innerText = `Failed to parse JSON on this line.\nError: ${err.message}\n\nRaw Line Format:\n${rawLine}`;
+                outputRaw.classList.add('error');
+                outputRaw.innerText = `Failed to parse JSON on this line.\nError: ${err.message}\n\nRaw Line Format:\n${rawLine}`;
+                outputParsed.innerText = '';
             }
         }
     </script>
