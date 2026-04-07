@@ -11,7 +11,7 @@ def main():
         job_name = sys.argv[1]
     else:
         # Try to read from the sft job info file
-        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_batch_job_info.json')
+        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_variants_batch_job_info.json')
         if os.path.exists(job_info_path):
             try:
                 with open(job_info_path, 'r', encoding='utf-8') as f:
