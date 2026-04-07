@@ -1,3 +1,7 @@
 firebase-admin
 google-adk
 google-cloud-firestore
+langgraph
+langchain
+langchain-google-genai
+pydantic
