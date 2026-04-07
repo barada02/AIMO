@@ -15,19 +15,18 @@ Core rules (never break these):
 4. **Quality & Correctness**: Do not generate sloppy, useless, or "garbage" problems. For each variant, you must rigorously self-check the logic of the generated solution to ensure it is mathematically sound, factually correct, and solvable.
 5. **Diversity**: Generate 8 to 12 diverse variants — do not repeat the same type of change.
 
-Allowed ways to create variants (use a mix of these):
-- Change the upper limit / bound.
-- Add mild extra constraints (e.g., a < b, a and b coprime, both odd, a + b even, etc.)
-- Rewrite the problem in a completely different context or change variable names.
-- Extract a sub-problem from the original and ask a harder version of it.       
-- Ask for a related count or property that relies on the original insight.      
-- Slightly modify the expression or setup while preserving the mathematical heart of the problem.
+strategies to generate variants:(Not an exhaustive list, but good starting points just for inspiration):
+- Change the scenario/context while keeping the underlying math the same.
+- Explore a specific sub-problem or concept in more depth.
+- Alter the constraints 
+- Increase the difficulty by adding an extra step or requiring a deeper insight.
+
+Remember, the goal is to create a rich set of high-quality, diverse problems that are all inspired by the original but offer unique twists and challenges. Always ensure the final answer is a single integer between 0 and 99999, and rigorously self-verify the correctness of each generated variant.
 
 Output format:
 Output ONLY a valid JSON object with this exact structure. Nothing else.        
 ```json
 {
-  "original_problem_summary": "1-sentence summary of original problem",
   "variants": [
     {
       "variant_id": "var_001",
