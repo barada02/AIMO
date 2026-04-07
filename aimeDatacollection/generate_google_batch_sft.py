@@ -60,8 +60,8 @@ def generate_user_prompt(item):
 def main():
     print("--- Generating Google GenAI Batch Job for SFT ---")
     
-    dataset_path = os.path.join(os.path.dirname(__file__), 'DATA', 'aimeRawDataCollection.json')
-    output_path = os.path.join(os.path.dirname(__file__), 'google_batch_requests_sft.jsonl')
+    dataset_path = os.path.join(os.path.dirname(__file__), 'DATA', 'aimeVariantRawDataCollection.json')
+    output_path = os.path.join(os.path.dirname(__file__), 'google_batch_requests_sft_variants.jsonl')
     
     try:
         with open(dataset_path, 'r', encoding='utf-8') as f:
@@ -128,7 +128,7 @@ def main():
         uploaded_file = client.files.upload(
             file=output_path,
             config=types.UploadFileConfig(
-                display_name='aime-sft-batch', 
+                display_name='aime-sft-variants-batch', 
                 mime_type='application/jsonl'
             )
         )
@@ -140,7 +140,7 @@ def main():
             model="gemini-3-flash-preview",
             src=uploaded_file.name,
             config={
-                'display_name': "aime-sft-batch-job",
+                'display_name': "aime-sft-variants-batch-job",
             },
         )
         
@@ -149,7 +149,7 @@ def main():
         print(f"Job State: {file_batch_job.state}")
         
         # Save job information to a JSON file
-        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_batch_job_info.json')
+        job_info_path = os.path.join(os.path.dirname(__file__), 'sft_variants_batch_job_info.json')
         job_info = {
             "file_name": uploaded_file.name,
             "job_name": file_batch_job.name,
